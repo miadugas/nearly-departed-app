@@ -1,180 +1,293 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Feather from "@expo/vector-icons/Feather";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useLocalSearchParams } from "expo-router";
+import { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ExternalLink } from '@/components/external-link';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { PlaceSearch } from "@/components/place-search";
+import { SoulCard } from "@/components/soul-card";
+import { SoulsMap } from "@/components/souls-map";
+import { useDeviceLocation } from "@/hooks/use-device-location";
+import { useNearbySouls } from "@/hooks/use-nearby-souls";
+import type { Place } from "@/lib/geocode";
+import { groupByCemetery } from "@/lib/wikidata";
 
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
-  const theme = useTheme();
+const RADII = [10, 25, 50, 150];
+const zoomFor = (r: number) =>
+  r <= 10 ? 12 : r <= 25 ? 10.5 : r <= 50 ? 9.5 : 8;
 
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
+export default function Discover() {
+  const { locate } = useLocalSearchParams<{ locate?: string }>();
+  const loc = useDeviceLocation(locate !== "0");
+  const [radius, setRadius] = useState(25);
+
+  // "search anywhere" — a picked place overrides the device location for the query
+  const [place, setPlace] = useState<Place | null>(null);
+  const activeLat = place?.lat ?? loc.lat;
+  const activeLon = place?.lon ?? loc.lon;
+
+  const {
+    data: souls,
+    isLoading,
+    isError,
+  } = useNearbySouls(activeLat, activeLon, radius);
+  const sections = useMemo(() => groupByCemetery(souls ?? []), [souls]);
+  const total = souls?.length ?? 0;
+  const placeLabel = place
+    ? `near ${place.label}`
+    : loc.status === "granted"
+      ? "near you"
+      : "Denver (sample)";
+
+  // walk-up mode: tap a cemetery pin to focus the list on just that resting place
+  const [focused, setFocused] = useState<string | null>(null);
+  const focusedSection = focused
+    ? sections.find((s) => s.title === focused)
+    : null;
+  const visibleSections = focusedSection ? [focusedSection] : sections;
+
+  const toggleCemetery = (title: string) =>
+    setFocused((prev) => (prev === title ? null : title));
+
+  const mapCenter: [number, number] = focusedSection?.coord
+    ? focusedSection.coord
+    : [activeLat, activeLon];
+  const mapZoom = focusedSection ? 14 : zoomFor(radius);
 
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
-
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
+    <View className="bg-bg flex-1">
+      {/* map band */}
+      <View style={{ flex: 4 }}>
+        <SoulsMap
+          center={mapCenter}
+          zoom={mapZoom}
+          userCenter={[loc.lat, loc.lon]}
+          sections={sections}
+          selected={focused}
+          onSelectCemetery={toggleCemetery}
+          onRecenter={() => setFocused(null)}
+        />
+        <LinearGradient
+          colors={[
+            "rgba(5,5,5,0.7)",
+            "rgba(5,5,5,0)",
+            "rgba(5,5,5,0)",
+            "rgba(5,5,5,0.92)",
+          ]}
+          locations={[0, 0.22, 0.62, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <SafeAreaView
+          edges={["top"]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="box-none"
+        >
+          <View className="px-4 pt-1" pointerEvents="box-none">
+            <Pressable
+              onPress={() => router.back()}
+              className="self-start active:opacity-80"
+            >
+              <BlurView
+                intensity={24}
+                tint="dark"
+                className="flex-row items-center gap-2 overflow-hidden rounded-full border border-line py-2 pl-2.5 pr-3.5"
+              >
+                <Feather name="chevron-left" size={16} color="#fff" />
+                <Text
+                  className="text-ink"
+                  style={{
+                    fontFamily: "PlusJakartaSans_600SemiBold",
+                    fontSize: 11,
+                    letterSpacing: 2,
+                  }}
+                >
+                  NEARLY DEPARTED
+                </Text>
+              </BlurView>
             </Pressable>
-          </ExternalLink>
-        </ThemedView>
+          </View>
+        </SafeAreaView>
+      </View>
 
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+      {/* sheet */}
+      <View
+        className="bg-bg rounded-t-[28px] border-t border-line"
+        style={{ flex: 5, marginTop: -24 }}
+      >
+        <View
+          className="mb-1 mt-3 h-1 w-10 self-center rounded-full"
+          style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
+        />
 
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
+        {focusedSection ? (
+          <View className="px-5 pb-2 pt-1">
+            <Pressable
+              onPress={() => setFocused(null)}
+              className="flex-row items-center gap-1.5 self-start active:opacity-70"
+            >
+              <Feather
+                name="chevron-left"
+                size={15}
+                color="rgba(255,255,255,0.6)"
               />
-            </ThemedView>
-          </Collapsible>
+              <Text
+                className="text-ink-dim"
+                style={{
+                  fontFamily: "PlusJakartaSans_600SemiBold",
+                  fontSize: 12,
+                }}
+              >
+                All nearby
+              </Text>
+            </Pressable>
+            <Text
+              className="font-display text-ink mt-1.5"
+              style={{ fontSize: 21, letterSpacing: -0.3 }}
+              numberOfLines={1}
+            >
+              {focusedSection.title}
+            </Text>
+            <Text
+              className="font-sans text-ink-dim mt-0.5"
+              style={{ fontSize: 12 }}
+            >
+              {focusedSection.data.length}{" "}
+              {focusedSection.data.length === 1 ? "soul" : "souls"} rest here ·{" "}
+              {focusedSection.dist.toFixed(1)} km away
+            </Text>
+          </View>
+        ) : (
+          <View className="px-5 pb-2 pt-1">
+            <PlaceSearch
+              onPick={(p) => {
+                setPlace(p);
+                setFocused(null);
+              }}
+            />
+            {place ? (
+              <Pressable
+                onPress={() => setPlace(null)}
+                className="mt-2 flex-row items-center gap-1.5 self-start active:opacity-70"
+              >
+                <Feather name="x" size={13} color="rgba(255,255,255,0.6)" />
+                <Text
+                  className="text-ink-dim"
+                  style={{
+                    fontFamily: "PlusJakartaSans_600SemiBold",
+                    fontSize: 12,
+                  }}
+                >
+                  Back to my location
+                </Text>
+              </Pressable>
+            ) : null}
+            <View className="mt-3 flex-row gap-2">
+              {RADII.map((r) => {
+                const active = r === radius;
+                return (
+                  <Pressable
+                    key={r}
+                    onPress={() => setRadius(r)}
+                    className={`rounded-full border px-3.5 py-1.5 ${active ? "border-ink bg-ink" : "border-line"}`}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "PlusJakartaSans_600SemiBold",
+                        fontSize: 12,
+                        color: active ? "#0a0a0a" : "rgba(255,255,255,0.6)",
+                      }}
+                    >
+                      {r} km
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text
+              className="font-sans text-ink-dim mt-3"
+              style={{ fontSize: 13 }}
+            >
+              {loc.status === "loading"
+                ? "Finding you…"
+                : isLoading
+                  ? "Consulting the records…"
+                  : isError
+                    ? "Query failed — pick a radius to retry."
+                    : `${total} notable souls within ${radius} km · ${placeLabel}`}
+            </Text>
+          </View>
+        )}
 
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ScrollView>
+        {isLoading ? (
+          <View className="flex-1 items-center pt-10">
+            <ActivityIndicator color="#ffffff" />
+          </View>
+        ) : isError ? (
+          <View className="flex-1 items-center justify-center px-8">
+            <Text
+              className="font-sans text-ink-dim text-center"
+              style={{ fontSize: 14 }}
+            >
+              Couldn&apos;t reach Wikidata. Check your connection and try
+              another radius.
+            </Text>
+          </View>
+        ) : (
+          <SectionList
+            sections={visibleSections}
+            keyExtractor={(item) => item.qid}
+            renderItem={({ item }) => <SoulCard soul={item} />}
+            renderSectionHeader={({ section }) =>
+              focusedSection ? null : (
+                <View className="bg-bg flex-row items-center justify-between border-b border-line px-5 py-2.5">
+                  <Text
+                    className="text-ink-dim"
+                    style={{
+                      fontFamily: "PlusJakartaSans_600SemiBold",
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {section.title} · {section.dist.toFixed(1)} km
+                  </Text>
+                  <Text
+                    className="text-ink-faint"
+                    style={{
+                      fontFamily: "PlusJakartaSans_600SemiBold",
+                      fontSize: 11,
+                    }}
+                  >
+                    {section.data.length}
+                  </Text>
+                </View>
+              )
+            }
+            stickySectionHeadersEnabled
+            contentContainerStyle={{ paddingBottom: 32 }}
+            ListEmptyComponent={
+              <View className="items-center px-8 pt-16">
+                <Text
+                  className="font-sans text-ink-dim text-center"
+                  style={{ fontSize: 14 }}
+                >
+                  No notable burials in this radius. Try widening it.
+                </Text>
+              </View>
+            }
+          />
+        )}
+      </View>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
-  },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: 'center',
-    gap: Spacing.one,
-    alignItems: 'center',
-  },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-  },
-  collapsibleContent: {
-    alignItems: 'center',
-  },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
-  },
-});

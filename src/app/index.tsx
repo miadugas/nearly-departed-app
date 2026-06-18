@@ -1,98 +1,153 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Feather from "@expo/vector-icons/Feather";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { useEffect, useState, type ReactNode } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+const TAGLINES = [
+  "The most interesting people nearby are already dead.",
+  "Meet the neighbors you never knew you had.",
+  "Meet the locals. The permanent ones.",
+  "The nearly departed, near you.",
+  "Remarkable lives, just underfoot.",
+];
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+function FadeUp({
+  delay = 0,
+  children,
+}: {
+  delay?: number;
+  children: ReactNode;
+}) {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(
+      delay,
+      withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) }),
     );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
+  }, [delay, progress]);
+  const style = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: (1 - progress.value) * 20 }],
+  }));
+  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
-export default function HomeScreen() {
+export default function Onboarding() {
+  const [tagline] = useState(
+    () => TAGLINES[Math.floor(Math.random() * TAGLINES.length)],
+  );
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View className="flex-1 bg-bg">
+      <Image
+        source={require("../../assets/hero.jpg")}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        contentPosition="center"
+      />
+      <LinearGradient
+        colors={[
+          "rgba(5,5,5,0.60)",
+          "rgba(5,5,5,0.00)",
+          "rgba(5,5,5,0.00)",
+          "rgba(5,5,5,0.45)",
+          "rgba(5,5,5,0.92)",
+          "#050505",
+        ]}
+        locations={[0, 0.18, 0.42, 0.62, 0.84, 1]}
+        style={StyleSheet.absoluteFill}
+      />
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <SafeAreaView className="flex-1" edges={["top", "bottom"]}>
+        <View className="flex-1" />
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        {/* content */}
+        <FadeUp>
+          <View className="gap-4 px-6 pb-2">
+            <View>
+              <Text
+                className="text-ink font-display-md"
+                style={{ fontSize: 26, lineHeight: 30, letterSpacing: -0.5 }}
+              >
+                The
+              </Text>
+              <Text
+                className="text-ink font-display"
+                style={{ fontSize: 56, lineHeight: 54, letterSpacing: -1.8 }}
+              >
+                Nearly{"\n"}Departed
+              </Text>
+            </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
+            <Text
+              className="text-ink font-sans-medium"
+              style={{ fontSize: 17, lineHeight: 24, maxWidth: 330 }}
+            >
+              {tagline}
+            </Text>
+
+            {/* primary CTA */}
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/explore", params: { locate: "1" } })
+              }
+              className="mt-1 active:opacity-90"
+            >
+              <View className="flex-row items-center justify-center rounded-full bg-ink py-[18px]">
+                <Feather name="map-pin" size={18} color="#0a0a0a" />
+                <Text
+                  className="font-sans-semibold ml-2"
+                  style={{ color: "#0a0a0a", fontSize: 16 }}
+                >
+                  Use my location
+                </Text>
+                <View
+                  className="absolute right-2 h-9 w-9 items-center justify-center rounded-full"
+                  style={{ backgroundColor: "rgba(10,10,10,0.07)" }}
+                >
+                  <Feather name="arrow-right" size={16} color="#0a0a0a" />
+                </View>
+              </View>
+            </Pressable>
+
+            {/* secondary entry — same footprint as primary; visible outline fill (blur is invisible on black) */}
+            <Pressable
+              onPress={() => router.push("/auth")}
+              className="flex-row items-center justify-center rounded-full py-[18px] active:opacity-85"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.12)",
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.30)",
+              }}
+            >
+              <Feather name="user" size={17} color="#fff" />
+              <Text
+                className="text-ink font-sans-semibold ml-2"
+                style={{ fontSize: 16 }}
+              >
+                Sign in or create account
+              </Text>
+            </Pressable>
+
+            <Text
+              className="text-ink-faint font-sans mt-1 text-center"
+              style={{ fontSize: 11, lineHeight: 16 }}
+            >
+              By continuing you agree to our Terms and Privacy Policy.
+            </Text>
+          </View>
+        </FadeUp>
       </SafeAreaView>
-    </ThemedView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
