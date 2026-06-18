@@ -1,7 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
-import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BackButton } from "@/components/icon-button";
 import { PlaceSearch } from "@/components/place-search";
 import { SoulCard } from "@/components/soul-card";
 import { SoulsMap } from "@/components/souls-map";
@@ -93,28 +93,7 @@ export default function Discover() {
           pointerEvents="box-none"
         >
           <View className="px-4 pt-1" pointerEvents="box-none">
-            <Pressable
-              onPress={() => router.back()}
-              className="self-start active:opacity-80"
-            >
-              <BlurView
-                intensity={24}
-                tint="dark"
-                className="flex-row items-center gap-2 overflow-hidden rounded-full border border-line py-2 pl-2.5 pr-3.5"
-              >
-                <Feather name="chevron-left" size={16} color="#fff" />
-                <Text
-                  className="text-ink"
-                  style={{
-                    fontFamily: "PlusJakartaSans_600SemiBold",
-                    fontSize: 11,
-                    letterSpacing: 2,
-                  }}
-                >
-                  NEARLY DEPARTED
-                </Text>
-              </BlurView>
-            </Pressable>
+            <BackButton />
           </View>
         </SafeAreaView>
       </View>

@@ -143,7 +143,27 @@ export default function Onboarding() {
               className="text-ink-faint font-sans mt-1 text-center"
               style={{ fontSize: 11, lineHeight: 16 }}
             >
-              By continuing you agree to our Terms and Privacy Policy.
+              By continuing you agree to our{" "}
+              <Text
+                onPress={() => router.push("/legal/terms")}
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  textDecorationLine: "underline",
+                }}
+              >
+                Terms
+              </Text>{" "}
+              and{" "}
+              <Text
+                onPress={() => router.push("/legal/privacy")}
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  textDecorationLine: "underline",
+                }}
+              >
+                Privacy Policy
+              </Text>
+              .
             </Text>
           </View>
         </FadeUp>

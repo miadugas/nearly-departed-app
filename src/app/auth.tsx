@@ -1,122 +1,183 @@
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { BlurView } from "expo-blur";
-import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import type { ReactNode } from "react";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// UI-only for now — the actual Apple/Google/email auth + saved favorites
-// is the Supabase layer (next lift). Buttons drop into the app as a stub.
+import { BackButton } from "@/components/icon-button";
+
+// UI-only for now — real Apple/Google/email sign-in + saved favorites is the
+// Supabase layer (next lift). Buttons currently just drop into the app.
 function AuthButton({
   icon,
   label,
   variant,
   onPress,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   variant: "solid" | "glass";
   onPress: () => void;
 }) {
-  const inner = (
-    <View className="flex-row items-center justify-center py-[17px]">
-      <View className="absolute left-5">{icon}</View>
-      <Text
-        className="font-sans-semibold"
-        style={{
-          fontSize: 16,
-          color: variant === "solid" ? "#0a0a0a" : "#fff",
-        }}
-      >
-        {label}
-      </Text>
-    </View>
-  );
+  const solid = variant === "solid";
   return (
-    <Pressable onPress={onPress} className="active:opacity-90">
-      {variant === "solid" ? (
-        <View className="rounded-full bg-ink">{inner}</View>
-      ) : (
-        <BlurView
-          intensity={24}
-          tint="dark"
-          className="overflow-hidden rounded-full border border-line"
+    <Pressable
+      onPress={onPress}
+      className="h-[54px] flex-row items-center justify-center rounded-full active:opacity-90"
+      style={
+        solid
+          ? {
+              backgroundColor: "#fff",
+              shadowColor: "#000",
+              shadowOpacity: 0.28,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 10 },
+              elevation: 5,
+            }
+          : {
+              backgroundColor: "rgba(255,255,255,0.10)",
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.26)",
+            }
+      }
+    >
+      <View className="flex-row items-center" style={{ gap: 10 }}>
+        {icon}
+        <Text
+          className="font-sans-semibold"
+          style={{
+            fontSize: 16,
+            letterSpacing: 0.1,
+            color: solid ? "#0a0a0a" : "#fff",
+          }}
         >
-          {inner}
-        </BlurView>
-      )}
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
 
 export default function Auth() {
-  const { mode } = useLocalSearchParams<{ mode?: string }>();
-  const isSignup = mode === "signup";
+  // stub until the backend exists — be honest that it's not wired yet
+  const soon = () =>
+    Alert.alert(
+      "Accounts are coming soon",
+      "Sign-in isn't wired up yet — for now you can explore and save favorites on this device.",
+    );
 
-  // stub: pretend auth succeeded and drop into the app
-  const stubIn = () =>
-    router.replace({ pathname: "/explore", params: { locate: "1" } });
+  // email = guest bypass for now: drop into the app like "Browse" did
+  const browse = () =>
+    router.replace({ pathname: "/explore", params: { locate: "0" } });
 
   return (
     <View className="bg-bg flex-1">
+      <Image
+        source={require("../../assets/auth-hero.jpg")}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        contentPosition="top"
+      />
+      <LinearGradient
+        colors={[
+          "rgba(5,5,5,0.55)",
+          "rgba(5,5,5,0.30)",
+          "rgba(5,5,5,0.85)",
+          "#050505",
+        ]}
+        locations={[0, 0.32, 0.66, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <SafeAreaView className="flex-1" edges={["top", "bottom"]}>
         {/* back */}
         <View className="px-4 pt-1">
-          <Pressable
-            onPress={() => router.back()}
-            className="self-start active:opacity-70"
-          >
-            <BlurView
-              intensity={24}
-              tint="dark"
-              className="h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-full border border-line"
-            >
-              <Feather name="chevron-left" size={20} color="#fff" />
-            </BlurView>
-          </Pressable>
+          <BackButton />
         </View>
 
-        <View className="flex-1 justify-end px-6 pb-2">
+        <View className="flex-1 justify-end px-6">
           <Text
             className="text-ink font-display"
-            style={{ fontSize: 40, lineHeight: 42, letterSpacing: -1.2 }}
+            style={{ fontSize: 40, lineHeight: 38, letterSpacing: -1.2 }}
           >
-            {isSignup ? "Create your\naccount" : "Welcome\nback"}
+            Save the{"\n"}souls you find
           </Text>
           <Text
-            className="text-ink-dim font-sans mb-8 mt-3"
-            style={{ fontSize: 15, lineHeight: 22, maxWidth: 320 }}
+            className="text-ink-dim font-sans"
+            style={{
+              fontSize: 15,
+              lineHeight: 22,
+              maxWidth: 320,
+              marginTop: 4,
+              marginBottom: 32,
+            }}
           >
-            Save the souls you find and pick up wherever you left off — across
-            every device.
+            Sign in to keep your favorites and pick up wherever you left off —
+            across every device. No account needed to explore.
           </Text>
 
-          <View className="gap-3">
+          <View style={{ gap: 12 }}>
             <AuthButton
               variant="solid"
-              icon={<FontAwesome name="apple" size={19} color="#0a0a0a" />}
+              icon={
+                <FontAwesome
+                  name="apple"
+                  size={19}
+                  color="#0a0a0a"
+                  style={{ marginTop: -2 }}
+                />
+              }
               label="Continue with Apple"
-              onPress={stubIn}
+              onPress={soon}
             />
             <AuthButton
-              variant="glass"
-              icon={<FontAwesome name="google" size={17} color="#fff" />}
+              variant="solid"
+              icon={
+                <Image
+                  source={require("../../assets/google-g.png")}
+                  style={{ width: 18, height: 18 }}
+                  contentFit="contain"
+                />
+              }
               label="Continue with Google"
-              onPress={stubIn}
+              onPress={soon}
             />
             <AuthButton
               variant="glass"
               icon={<Feather name="mail" size={18} color="#fff" />}
               label="Continue with email"
-              onPress={stubIn}
+              onPress={browse}
             />
           </View>
 
           <Text
-            className="text-ink-faint font-sans mt-6 text-center"
-            style={{ fontSize: 11, lineHeight: 16 }}
+            className="text-ink-faint font-sans text-center"
+            style={{ fontSize: 11, lineHeight: 16, marginTop: 22 }}
           >
-            By continuing you agree to our Terms and Privacy Policy.
+            By continuing you agree to our{" "}
+            <Text
+              onPress={() => router.push("/legal/terms")}
+              style={{
+                color: "rgba(255,255,255,0.7)",
+                textDecorationLine: "underline",
+              }}
+            >
+              Terms
+            </Text>{" "}
+            and{" "}
+            <Text
+              onPress={() => router.push("/legal/privacy")}
+              style={{
+                color: "rgba(255,255,255,0.7)",
+                textDecorationLine: "underline",
+              }}
+            >
+              Privacy Policy
+            </Text>
+            .
           </Text>
         </View>
       </SafeAreaView>

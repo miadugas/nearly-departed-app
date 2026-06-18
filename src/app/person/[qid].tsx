@@ -1,9 +1,8 @@
 import Feather from "@expo/vector-icons/Feather";
 import { useQuery } from "@tanstack/react-query";
-import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   Linking,
@@ -15,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BackButton, IconButton } from "@/components/icon-button";
 import { heroUrl, year, type Soul } from "@/lib/wikidata";
 import { fetchSummary } from "@/lib/wikipedia";
 
@@ -258,22 +258,8 @@ export default function PersonDetail() {
       {/* floating nav */}
       <SafeAreaView edges={["top"]} className="absolute left-0 right-0 top-0">
         <View className="flex-row items-center justify-between px-4 pt-1">
-          <Pressable onPress={() => router.back()}>
-            <BlurView
-              intensity={24}
-              tint="dark"
-              className="h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-full border border-line"
-            >
-              <Feather name="chevron-left" size={20} color="#fff" />
-            </BlurView>
-          </Pressable>
-          <BlurView
-            intensity={24}
-            tint="dark"
-            className="h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-full border border-line"
-          >
-            <Feather name="heart" size={18} color="#fff" />
-          </BlurView>
+          <BackButton />
+          <IconButton name="heart" size={18} accessibilityLabel="Save" />
         </View>
       </SafeAreaView>
 
