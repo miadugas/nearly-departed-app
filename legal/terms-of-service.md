@@ -3,8 +3,6 @@
 **Effective date:** June 18, 2026
 **Last updated:** June 18, 2026
 
-> ⚠️ **Draft for review.** These Terms are tailored to the App but have not been reviewed by a lawyer. Fill in the bracketed placeholders and have them reviewed before publishing.
-
 These Terms of Service ("Terms") govern your use of the **Nearly Departed** mobile application ("the App"), operated by Grave Goods, LLC ("we," "us"), based in Littleton, Colorado, USA. By downloading or using the App, you agree to these Terms. If you do not agree, do not use the App.
 
 ## 1. What the App is
@@ -43,7 +41,7 @@ Any items you save (e.g. favorites) are stored on your device. You are responsib
 
 ## 7. Intellectual property and open-data licenses
 
-The App's design, code, and branding are owned by **[Your name / legal entity]** and protected by intellectual-property laws. The underlying **data and map content are owned by their respective sources and provided under open licenses**, which you must respect:
+The App's design, code, and branding are owned by Grave Goods, LLC and protected by intellectual-property laws. The underlying **data and map content are owned by their respective sources and provided under open licenses**, which you must respect:
 
 - **Wikidata** — CC0 (public domain).
 - **Wikipedia** content — CC BY-SA.
@@ -62,11 +60,11 @@ THE APP IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, 
 
 ## 10. Limitation of liability
 
-TO THE MAXIMUM EXTENT PERMITTED BY LAW, **[Your name / legal entity]** WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS ARISING FROM YOUR USE OF (OR INABILITY TO USE) THE APP OR YOUR RELIANCE ON ANY INFORMATION IN IT, INCLUDING ANYTHING RELATED TO TRAVELING TO OR VISITING A LOCATION. OUR TOTAL LIABILITY WILL NOT EXCEED THE GREATER OF THE AMOUNT YOU PAID FOR THE APP OR USD $0.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, Grave Goods, LLC WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS ARISING FROM YOUR USE OF (OR INABILITY TO USE) THE APP OR YOUR RELIANCE ON ANY INFORMATION IN IT, INCLUDING ANYTHING RELATED TO TRAVELING TO OR VISITING A LOCATION. OUR TOTAL LIABILITY WILL NOT EXCEED THE GREATER OF THE AMOUNT YOU PAID FOR THE APP OR USD $0.
 
 ## 11. Indemnification
 
-You agree to indemnify and hold harmless **[Your name / legal entity]** from any claims or damages arising out of your misuse of the App or violation of these Terms or applicable law.
+You agree to indemnify and hold harmless Grave Goods, LLC from any claims or damages arising out of your misuse of the App or violation of these Terms or applicable law.
 
 ## 12. Changes and termination
 

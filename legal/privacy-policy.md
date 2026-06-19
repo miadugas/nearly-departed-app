@@ -3,9 +3,7 @@
 **Effective date:** June 18, 2026
 **Last updated:** June 18, 2026
 
-> ⚠️ **Draft for review.** This policy is tailored to how the app currently works, but it has not been reviewed by a lawyer. Fill in the bracketed placeholders and have it reviewed for your jurisdiction (e.g. GDPR, UK GDPR, CCPA/CPRA) before publishing or submitting to the App Store.
-
-This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") handles information when you use it. The App is operated by **[Your name / legal entity]**, based in **[Denver, Colorado, USA]**. Contact: **[your-contact-email]**.
+This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") handles information when you use it. The App is operated by Grave Goods, LLC based in Littleton, Colorado, USA. Contact: admin@gravegoodsgoodies.com.
 
 ## The short version
 
@@ -77,4 +75,4 @@ We may update this policy as the App evolves (for example, when accounts are add
 
 ## Contact
 
-Questions? Contact **[Your name / legal entity]** at **[your-contact-email]**.
+Questions? Contact Grave Goods, LLC at admin@gravegoodsgoodies.com.
