@@ -1,4 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,6 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton, IconButton } from "@/components/icon-button";
+import { useFavorites } from "@/lib/favorites/context";
 import { heroUrl, year, type Soul } from "@/lib/wikidata";
 import { fetchSummary } from "@/lib/wikipedia";
 
@@ -69,6 +71,8 @@ export default function PersonDetail() {
   const { data } = useLocalSearchParams<{ data: string }>();
   const soul: Soul | null = data ? JSON.parse(data) : null;
   const [expanded, setExpanded] = useState(false);
+  const { isFavorite, toggle } = useFavorites();
+  const saved = soul ? isFavorite(soul.qid) : false;
 
   const summary = useQuery({
     queryKey: ["summary", soul?.qid ?? "none"],
@@ -87,6 +91,8 @@ export default function PersonDetail() {
   const bio =
     summary.data?.extract ||
     (summary.isLoading ? "Reading the record…" : soul.desc);
+  // Favorites don't store distance (it's location-dependent), so guard it.
+  const hasDist = Number.isFinite(soul.dist);
 
   const openDirections = () => {
     if (!soul.coord) return;
@@ -149,7 +155,7 @@ export default function PersonDetail() {
                   textTransform: "uppercase",
                 }}
               >
-                {soul.dist.toFixed(1)} km from you
+                {hasDist ? `${soul.dist.toFixed(1)} km from you` : soul.place}
               </Text>
             </View>
             <Text
@@ -182,7 +188,7 @@ export default function PersonDetail() {
               <Stat label="Resting at" value={soul.place} small />
               <Stat
                 label="Distance"
-                value={`${soul.dist.toFixed(1)} km`}
+                value={hasDist ? `${soul.dist.toFixed(1)} km` : "—"}
                 noRight
               />
             </View>
@@ -259,7 +265,17 @@ export default function PersonDetail() {
       <SafeAreaView edges={["top"]} className="absolute left-0 right-0 top-0">
         <View className="flex-row items-center justify-between px-4 pt-1">
           <BackButton />
-          <IconButton name="heart" size={18} accessibilityLabel="Save" />
+          <IconButton
+            icon={
+              <FontAwesome
+                name={saved ? "heart" : "heart-o"}
+                size={17}
+                color={saved ? "#FF6B81" : "#fff"}
+              />
+            }
+            onPress={() => toggle(soul)}
+            accessibilityLabel={saved ? "Remove from saved" : "Save"}
+          />
         </View>
       </SafeAreaView>
 

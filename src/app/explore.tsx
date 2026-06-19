@@ -1,6 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { BackButton } from "@/components/icon-button";
+import { BackButton, IconButton } from "@/components/icon-button";
 import { PlaceSearch } from "@/components/place-search";
 import { SoulCard } from "@/components/soul-card";
 import { SoulsMap } from "@/components/souls-map";
@@ -92,8 +92,17 @@ export default function Discover() {
           style={StyleSheet.absoluteFill}
           pointerEvents="box-none"
         >
-          <View className="px-4 pt-1" pointerEvents="box-none">
+          <View
+            className="flex-row items-center justify-between px-4 pt-1"
+            pointerEvents="box-none"
+          >
             <BackButton />
+            <IconButton
+              name="user"
+              size={18}
+              onPress={() => router.push("/profile")}
+              accessibilityLabel="Profile"
+            />
           </View>
         </SafeAreaView>
       </View>

@@ -1,6 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import { router } from "expo-router";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { Pressable, type StyleProp, type ViewStyle } from "react-native";
 
 type FeatherName = ComponentProps<typeof Feather>["name"];
@@ -10,13 +10,17 @@ type FeatherName = ComponentProps<typeof Feather>["name"];
 // dark maps and photos alike.
 export function IconButton({
   name,
+  icon,
   onPress,
   size = 20,
   color = "#fff",
   accessibilityLabel,
   style,
 }: {
-  name: FeatherName;
+  name?: FeatherName;
+  // Custom icon node — wins over `name`. Use for non-Feather glyphs (e.g. a
+  // filled FontAwesome heart) while keeping the shared round-glass chrome.
+  icon?: ReactNode;
   onPress?: () => void;
   size?: number;
   color?: string;
@@ -32,14 +36,21 @@ export function IconButton({
       className="h-[42px] w-[42px] items-center justify-center self-start rounded-full active:opacity-70"
       style={[
         {
-          backgroundColor: "rgba(255,255,255,0.12)",
+          backgroundColor: "rgba(255,255,255,0.14)",
           borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.26)",
+          borderColor: "rgba(255,255,255,0.32)",
+          // soft shadow lifts the control off maps/photos for legibility
+          shadowColor: "#000",
+          shadowOpacity: 0.35,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
         },
         style,
       ]}
     >
-      <Feather name={name} size={size} color={color} />
+      {icon ??
+        (name ? <Feather name={name} size={size} color={color} /> : null)}
     </Pressable>
   );
 }

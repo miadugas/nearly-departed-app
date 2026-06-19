@@ -6,7 +6,6 @@ import {
   Marker,
 } from "@maplibre/maplibre-react-native";
 import Feather from "@expo/vector-icons/Feather";
-import { BlurView } from "expo-blur";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, Text, View } from "react-native";
 
@@ -37,22 +36,26 @@ function MapButton({
 }) {
   return (
     <Pressable onPress={onPress} style={{ marginTop: 8 }}>
-      <BlurView
-        intensity={30}
-        tint="dark"
+      <View
         style={{
           width: 40,
           height: 40,
           borderRadius: 20,
           alignItems: "center",
           justifyContent: "center",
-          overflow: "hidden",
+          // unified with IconButton: light glass + hairline border + shadow
+          backgroundColor: "rgba(255,255,255,0.14)",
           borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.16)",
+          borderColor: "rgba(255,255,255,0.32)",
+          shadowColor: "#000",
+          shadowOpacity: 0.35,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 6,
         }}
       >
         <Feather name={name} size={18} color="#fff" />
-      </BlurView>
+      </View>
     </Pressable>
   );
 }

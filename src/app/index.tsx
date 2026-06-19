@@ -75,12 +75,12 @@ export default function Onboarding() {
         <FadeUp>
           <View className="gap-4 px-6 pb-2">
             <View>
-              <Text
+              {/* <Text
                 className="text-ink font-display-md"
                 style={{ fontSize: 26, lineHeight: 30, letterSpacing: -0.5 }}
               >
                 The
-              </Text>
+              </Text> */}
               <Text
                 className="text-ink font-display"
                 style={{ fontSize: 56, lineHeight: 54, letterSpacing: -1.8 }}
