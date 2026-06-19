@@ -5,7 +5,7 @@
 
 > ⚠️ **Draft for review.** These Terms are tailored to the App but have not been reviewed by a lawyer. Fill in the bracketed placeholders and have them reviewed before publishing.
 
-These Terms of Service ("Terms") govern your use of the **Nearly Departed** mobile application ("the App"), operated by **[Your name / legal entity]** ("we," "us"), based in **[Denver, Colorado, USA]**. By downloading or using the App, you agree to these Terms. If you do not agree, do not use the App.
+These Terms of Service ("Terms") govern your use of the **Nearly Departed** mobile application ("the App"), operated by Grave Goods, LLC ("we," "us"), based in Littleton, Colorado, USA. By downloading or using the App, you agree to these Terms. If you do not agree, do not use the App.
 
 ## 1. What the App is
 
@@ -78,8 +78,8 @@ These Terms are governed by the laws of the **State of Colorado, USA**, without 
 
 ## 14. Apple App Store
 
-If you obtained the App through the Apple App Store, you acknowledge these Terms are between you and **[Your name / legal entity]**, not Apple, and that Apple is not responsible for the App or its content. Apple is a third-party beneficiary of these Terms and may enforce them.
+If you obtained the App through the Apple App Store, you acknowledge these Terms are between you and Grave Goods LLC, not Apple, and that Apple is not responsible for the App or its content. Apple is a third-party beneficiary of these Terms and may enforce them.
 
 ## 15. Contact
 
-Questions? Contact **[Your name / legal entity]** at **[your-contact-email]**.
+Questions? Contact Grave Goods, LLC at admin@gravegoodsgoodies.com
