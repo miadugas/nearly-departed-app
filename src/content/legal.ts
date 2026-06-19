@@ -62,7 +62,7 @@ We do not maintain servers that store your personal data, so we retain none. On-
 
 ## Your rights
 
-Depending on where you live, you may have rights to access, correct, delete, or restrict processing of personal data (e.g. under GDPR or CCPA/CPRA). Because we do not store personal data ourselves, most such requests are satisfied by controlling permissions on your device (location) and deleting local data (uninstalling the App). For requests concerning data held by the third-party services above, please contact those providers directly. You may also contact us at **[your-contact-email]**.
+Depending on where you live, you may have rights to access, correct, delete, or restrict processing of personal data (e.g. under GDPR or CCPA/CPRA). Because we do not store personal data ourselves, most such requests are satisfied by controlling permissions on your device (location) and deleting local data (uninstalling the App). For requests concerning data held by the third-party services above, please contact those providers directly. You may also contact us at admin@gravegoodsgoodies.com.
 
 ## Children's privacy
 

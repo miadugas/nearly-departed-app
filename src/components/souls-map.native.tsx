@@ -116,12 +116,6 @@ export function SoulsMap({
   };
   const selectedSection = cems.find((s) => s.title === selected);
 
-  const zoomBy = (delta: number) =>
-    setView((v) => {
-      const z = Math.min(18, Math.max(3, v.zoom + delta));
-      cameraRef.current?.zoomTo?.(z, 300);
-      return { ...v, zoom: z };
-    });
   const recenter = () => {
     cameraRef.current?.flyTo?.([userCenter[1], userCenter[0]], 600);
     onRecenter?.();
@@ -188,22 +182,22 @@ export function SoulsMap({
           <Layer
             id="cemetery-dots"
             type="circle"
-            style={{
-              circleRadius: 7,
-              circleColor: "#ffffff",
-              circleStrokeColor: "#050505",
-              circleStrokeWidth: 2,
+            paint={{
+              "circle-radius": 7,
+              "circle-color": "#ffffff",
+              "circle-stroke-color": "#050505",
+              "circle-stroke-width": 2,
             }}
           />
           <Layer
             id="cemetery-selected"
             type="circle"
             filter={["==", ["get", "title"], selected ?? "__none__"]}
-            style={{
-              circleRadius: 11,
-              circleColor: "#ffffff",
-              circleStrokeColor: "#050505",
-              circleStrokeWidth: 3,
+            paint={{
+              "circle-radius": 11,
+              "circle-color": "#ffffff",
+              "circle-stroke-color": "#050505",
+              "circle-stroke-width": 3,
             }}
           />
         </GeoJSONSource>
@@ -255,10 +249,8 @@ export function SoulsMap({
         )}
       </MapLibreMap>
 
-      {/* floating controls */}
+      {/* locate — zoom is pinch-to-zoom (no +/- buttons, mobile-map standard) */}
       <View style={{ position: "absolute", right: 12, bottom: 40 }}>
-        <MapButton name="plus" onPress={() => zoomBy(1)} />
-        <MapButton name="minus" onPress={() => zoomBy(-1)} />
         <MapButton name="navigation" onPress={recenter} />
       </View>
     </View>

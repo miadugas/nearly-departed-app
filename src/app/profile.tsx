@@ -1,5 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { FlatList, Pressable, Text, View } from "react-native";
@@ -102,9 +103,9 @@ export default function Profile() {
                   className="h-[76px] w-[76px] items-center justify-center rounded-full border border-line"
                   style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
                 >
-                  <Feather
-                    name="user"
-                    size={30}
+                  <MaterialCommunityIcons
+                    name="skull-outline"
+                    size={36}
                     color="rgba(255,255,255,0.5)"
                   />
                 </View>

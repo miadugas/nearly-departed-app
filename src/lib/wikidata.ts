@@ -24,7 +24,19 @@ export type CemeterySection = {
 
 const ENDPOINT = "https://query.wikidata.org/sparql";
 
+// Device language (e.g. "fr" from "fr-CA"), falling back to English. Used so
+// names/places/occupations come back localized worldwide, then English.
+function deviceLang(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale.split("-")[0] || "en";
+  } catch {
+    return "en";
+  }
+}
+
 function buildQuery(lat: number, lon: number, radiusKm: number) {
+  const lang = deviceLang();
+  const labelLang = lang === "en" ? "en" : `${lang},en`;
   return `
 SELECT ?person ?personLabel ?personDescription ?placeLabel ?coord ?dist ?article ?image ?dob ?dod
        (GROUP_CONCAT(DISTINCT ?occLabel; separator=", ") AS ?occs) WHERE {
@@ -39,8 +51,8 @@ SELECT ?person ?personLabel ?personDescription ?placeLabel ?coord ?dist ?article
   OPTIONAL { ?article schema:about ?person ; schema:isPartOf <https://en.wikipedia.org/> . }
   OPTIONAL { ?person wdt:P569 ?dob. }
   OPTIONAL { ?person wdt:P570 ?dod. }
-  OPTIONAL { ?person wdt:P106 ?occ. ?occ rdfs:label ?occLabel. FILTER(LANG(?occLabel)="en") }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+  OPTIONAL { ?person wdt:P106 ?occ. }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "${labelLang}". }
 }
 GROUP BY ?person ?personLabel ?personDescription ?placeLabel ?coord ?dist ?article ?image ?dob ?dod
 ORDER BY ?dist LIMIT 150`;

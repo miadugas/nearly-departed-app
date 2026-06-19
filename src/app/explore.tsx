@@ -1,4 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -98,8 +99,13 @@ export default function Discover() {
           >
             <BackButton />
             <IconButton
-              name="user"
-              size={18}
+              icon={
+                <MaterialCommunityIcons
+                  name="skull-outline"
+                  size={20}
+                  color="#fff"
+                />
+              }
               onPress={() => router.push("/profile")}
               accessibilityLabel="Profile"
             />
