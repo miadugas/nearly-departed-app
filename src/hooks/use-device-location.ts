@@ -19,13 +19,12 @@ export function useDeviceLocation(enabled = true): DeviceLocation {
   });
 
   useEffect(() => {
-    if (!enabled) {
-      setState({ ...DENVER, status: "fallback" });
-      return;
-    }
-
     let cancelled = false;
     (async () => {
+      if (!enabled) {
+        if (!cancelled) setState({ ...DENVER, status: "fallback" });
+        return;
+      }
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {

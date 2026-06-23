@@ -1,10 +1,12 @@
 // Free, no-key place search via Photon (OpenStreetMap). Turns a typed place
 // name into coordinates so "search anywhere" can reuse the nearby-souls query.
 
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
+
 export type Place = { label: string; lat: number; lon: number };
 
 export async function searchPlaces(query: string): Promise<Place[]> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6&lang=en`,
   );
   if (!res.ok) throw new Error(`Place search failed (${res.status})`);

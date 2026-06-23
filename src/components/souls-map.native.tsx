@@ -6,7 +6,7 @@ import {
   Marker,
 } from "@maplibre/maplibre-react-native";
 import Feather from "@expo/vector-icons/Feather";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, Text, View } from "react-native";
 
 import type { CemeterySection } from "@/lib/wikidata";
@@ -71,15 +71,15 @@ export function SoulsMap({
 }: Props) {
   const [lat, lon] = center;
   const cameraRef = useRef<any>(null);
-  const [view, setView] = useState({ center: [lon, lat], zoom });
-
-  // follow parent focus / recenter changes
-  useEffect(() => {
-    setView({ center: [lon, lat], zoom });
-  }, [lat, lon, zoom]);
+  // Memoized camera target — a stable reference so the Camera only re-animates
+  // when the focus point actually changes, not on every parent re-render.
+  const view = useMemo(
+    () => ({ center: [lon, lat] as [number, number], zoom }),
+    [lat, lon, zoom],
+  );
 
   // pulsing "you" ring
-  const pulse = useRef(new Animated.Value(0)).current;
+  const [pulse] = useState(() => new Animated.Value(0));
   useEffect(() => {
     const anim = Animated.loop(
       Animated.timing(pulse, {

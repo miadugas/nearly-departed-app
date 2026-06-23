@@ -1,6 +1,9 @@
 // Live Wikidata SPARQL layer — notable people buried near a point.
 // Ported from the HTML POC. Public endpoint, no key.
 
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
+import { WIKIMEDIA_HEADERS } from "@/lib/wikimedia";
+
 export type Soul = {
   qid: string;
   label: string;
@@ -40,12 +43,20 @@ function buildQuery(lat: number, lon: number, radiusKm: number) {
   return `
 SELECT ?person ?personLabel ?personDescription ?placeLabel ?coord ?dist ?article ?image ?dob ?dod
        (GROUP_CONCAT(DISTINCT ?occLabel; separator=", ") AS ?occs) WHERE {
-  ?person wdt:P119 ?place.
-  SERVICE wikibase:around {
-    ?place wdt:P625 ?coord.
-    bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral.
-    bd:serviceParam wikibase:radius "${radiusKm}".
-    bd:serviceParam wikibase:distance ?dist.
+  # Nearest 150 first (subquery), THEN enrich — so the OPTIONAL joins only touch
+  # 150 rows, not every burial in radius. Keeps dense-city queries ~3s, not 30s+.
+  {
+    SELECT ?person ?place ?coord ?dist WHERE {
+      ?person wdt:P119 ?place.
+      SERVICE wikibase:around {
+        ?place wdt:P625 ?coord.
+        bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral.
+        bd:serviceParam wikibase:radius "${radiusKm}".
+        bd:serviceParam wikibase:distance ?dist.
+      }
+    }
+    ORDER BY ?dist
+    LIMIT 150
   }
   OPTIONAL { ?person wdt:P18 ?image. }
   OPTIONAL { ?article schema:about ?person ; schema:isPartOf <https://en.wikipedia.org/> . }
@@ -55,7 +66,7 @@ SELECT ?person ?personLabel ?personDescription ?placeLabel ?coord ?dist ?article
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${labelLang}". }
 }
 GROUP BY ?person ?personLabel ?personDescription ?placeLabel ?coord ?dist ?article ?image ?dob ?dod
-ORDER BY ?dist LIMIT 150`;
+ORDER BY ?dist`;
 }
 
 type Binding = Record<string, { value: string } | undefined>;
@@ -73,9 +84,16 @@ export async function fetchNearbySouls(
   const url =
     `${ENDPOINT}?format=json&query=` +
     encodeURIComponent(buildQuery(lat, lon, radiusKm));
-  const res = await fetch(url, {
-    headers: { Accept: "application/sparql-results+json" },
-  });
+  const res = await fetchWithTimeout(
+    url,
+    {
+      headers: {
+        ...WIKIMEDIA_HEADERS,
+        Accept: "application/sparql-results+json",
+      },
+    },
+    20_000,
+  );
   if (!res.ok) throw new Error(`Wikidata request failed (${res.status})`);
 
   const rows: Binding[] = (await res.json()).results.bindings;
