@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
+import { AuthProvider } from "@/lib/auth/context";
 import { FavoritesProvider } from "@/lib/favorites/context";
 
 const queryClient = new QueryClient();
@@ -30,16 +31,18 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <FavoritesProvider>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: "#050505" },
-            animation: "slide_from_right",
-          }}
-        />
-      </FavoritesProvider>
+      <AuthProvider>
+        <FavoritesProvider>
+          <StatusBar style="light" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: "#050505" },
+              animation: "slide_from_right",
+            }}
+          />
+        </FavoritesProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

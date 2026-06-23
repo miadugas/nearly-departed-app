@@ -3,31 +3,45 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import type { ReactNode } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useState, type ComponentProps, type ReactNode } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/icon-button";
+import { useAuth } from "@/lib/auth/context";
 
-// UI-only for now — real Apple/Google/email sign-in + saved favorites is the
-// Supabase layer (next lift). Buttons currently just drop into the app.
+// Apple/Google are still stubs (separate native-config lift). "Continue with
+// email" is live: passwordless 6-digit code via Supabase — no deep links.
 function AuthButton({
   icon,
   label,
   variant,
   onPress,
+  disabled,
 }: {
   icon: ReactNode;
   label: string;
   variant: "solid" | "glass";
   onPress: () => void;
+  disabled?: boolean;
 }) {
   const solid = variant === "solid";
   return (
     <Pressable
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
       className="h-[54px] flex-row items-center justify-center rounded-full active:opacity-90"
-      style={
+      style={[
         solid
           ? {
               backgroundColor: "#fff",
@@ -41,8 +55,9 @@ function AuthButton({
               backgroundColor: "rgba(255,255,255,0.10)",
               borderWidth: 1,
               borderColor: "rgba(255,255,255,0.26)",
-            }
-      }
+            },
+        disabled ? { opacity: 0.5 } : null,
+      ]}
     >
       <View className="flex-row items-center" style={{ gap: 10 }}>
         {icon}
@@ -61,17 +76,92 @@ function AuthButton({
   );
 }
 
+// Glass-style text field matching the auth buttons. Merges any caller `style`
+// on top of the base look (so the code field can add letter-spacing/centering
+// without wiping out the glass background).
+function Field({ style, ...props }: ComponentProps<typeof TextInput>) {
+  return (
+    <TextInput
+      placeholderTextColor="rgba(255,255,255,0.4)"
+      className="h-[54px] rounded-full px-5"
+      style={[
+        {
+          backgroundColor: "rgba(255,255,255,0.10)",
+          borderWidth: 1,
+          borderColor: "rgba(255,255,255,0.26)",
+          color: "#fff",
+          fontFamily: "PlusJakartaSans_500Medium",
+          fontSize: 16,
+        },
+        style,
+      ]}
+      {...props}
+    />
+  );
+}
+
+type Mode = "choose" | "email" | "code";
+
+const COPY: Record<Mode, { title: ReactNode; subtitle: string }> = {
+  choose: {
+    title: <>Save the{"\n"}souls you find</>,
+    subtitle:
+      "Sign in to keep your favorites and pick up wherever you left off — across every device. No account needed to explore.",
+  },
+  email: {
+    title: "What's your\nemail?",
+    subtitle: "We'll send a 6-digit code — no password to remember.",
+  },
+  code: {
+    title: "Enter the code",
+    subtitle: "Check your inbox (and spam). It's good for a few minutes.",
+  },
+};
+
 export default function Auth() {
-  // stub until the backend exists — be honest that it's not wired yet
+  const { sendCode, verifyCode } = useAuth();
+  const [mode, setMode] = useState<Mode>("choose");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const soon = () =>
     Alert.alert(
-      "Accounts are coming soon",
-      "Sign-in isn't wired up yet — for now you can explore and save favorites on this device.",
+      "Coming soon",
+      "Apple and Google sign-in aren't wired up yet — use email for now.",
     );
 
-  // email = guest bypass for now: drop into the app like "Browse" did
-  const browse = () =>
-    router.replace({ pathname: "/explore", params: { locate: "0" } });
+  const handleSendCode = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await sendCode(email);
+      setCode("");
+      setMode("code");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't send the code.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await verifyCode(email, code);
+      // onAuthStateChange persists the session; drop the user into the app.
+      router.replace({ pathname: "/explore", params: { locate: "0" } });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That code didn't work.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = COPY[mode];
+  const emailValid = /^\S+@\S+\.\S+$/.test(email.trim());
 
   return (
     <View className="bg-bg flex-1">
@@ -93,93 +183,221 @@ export default function Auth() {
       />
 
       <SafeAreaView className="flex-1" edges={["top", "bottom"]}>
-        {/* back */}
         <View className="px-4 pt-1">
           <BackButton />
         </View>
 
-        <View className="flex-1 justify-end px-6">
-          <Text
-            className="text-ink font-display"
-            style={{ fontSize: 40, lineHeight: 38, letterSpacing: -1.2 }}
-          >
-            Save the{"\n"}souls you find
-          </Text>
-          <Text
-            className="text-ink-dim font-sans"
-            style={{
-              fontSize: 15,
-              lineHeight: 22,
-              maxWidth: 320,
-              marginTop: 4,
-              marginBottom: 32,
-            }}
-          >
-            Sign in to keep your favorites and pick up wherever you left off —
-            across every device. No account needed to explore.
-          </Text>
-
-          <View style={{ gap: 12 }}>
-            <AuthButton
-              variant="solid"
-              icon={
-                <FontAwesome
-                  name="apple"
-                  size={19}
-                  color="#0a0a0a"
-                  style={{ marginTop: -2 }}
-                />
-              }
-              label="Continue with Apple"
-              onPress={soon}
-            />
-            <AuthButton
-              variant="solid"
-              icon={
-                <Image
-                  source={require("../../assets/google-g.png")}
-                  style={{ width: 18, height: 18 }}
-                  contentFit="contain"
-                />
-              }
-              label="Continue with Google"
-              onPress={soon}
-            />
-            <AuthButton
-              variant="glass"
-              icon={<Feather name="mail" size={18} color="#fff" />}
-              label="Continue with email"
-              onPress={browse}
-            />
-          </View>
-
-          <Text
-            className="text-ink-faint font-sans text-center"
-            style={{ fontSize: 11, lineHeight: 16, marginTop: 22 }}
-          >
-            By continuing you agree to our{" "}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="flex-1 justify-end"
+        >
+          <View className="px-6">
             <Text
-              onPress={() => router.push("/legal/terms")}
-              style={{
-                color: "rgba(255,255,255,0.7)",
-                textDecorationLine: "underline",
-              }}
+              className="text-ink font-display"
+              style={{ fontSize: 40, lineHeight: 38, letterSpacing: -1.2 }}
             >
-              Terms
-            </Text>{" "}
-            and{" "}
-            <Text
-              onPress={() => router.push("/legal/privacy")}
-              style={{
-                color: "rgba(255,255,255,0.7)",
-                textDecorationLine: "underline",
-              }}
-            >
-              Privacy Policy
+              {copy.title}
             </Text>
-            .
-          </Text>
-        </View>
+            <Text
+              className="text-ink-dim font-sans"
+              style={{
+                fontSize: 15,
+                lineHeight: 22,
+                maxWidth: 320,
+                marginTop: 4,
+                marginBottom: 32,
+              }}
+            >
+              {copy.subtitle}
+            </Text>
+
+            {mode === "choose" ? (
+              <View style={{ gap: 12 }}>
+                <AuthButton
+                  variant="solid"
+                  icon={
+                    <FontAwesome
+                      name="apple"
+                      size={19}
+                      color="#0a0a0a"
+                      style={{ marginTop: -2 }}
+                    />
+                  }
+                  label="Continue with Apple"
+                  onPress={soon}
+                />
+                <AuthButton
+                  variant="solid"
+                  icon={
+                    <Image
+                      source={require("../../assets/google-g.png")}
+                      style={{ width: 18, height: 18 }}
+                      contentFit="contain"
+                    />
+                  }
+                  label="Continue with Google"
+                  onPress={soon}
+                />
+                <AuthButton
+                  variant="glass"
+                  icon={<Feather name="mail" size={18} color="#fff" />}
+                  label="Continue with email"
+                  onPress={() => {
+                    setError(null);
+                    setMode("email");
+                  }}
+                />
+              </View>
+            ) : null}
+
+            {mode === "email" ? (
+              <View style={{ gap: 12 }}>
+                <Field
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect={false}
+                  autoFocus
+                  returnKeyType="go"
+                  onSubmitEditing={emailValid ? handleSendCode : undefined}
+                />
+                <AuthButton
+                  variant="solid"
+                  disabled={busy || !emailValid}
+                  icon={
+                    busy ? (
+                      <ActivityIndicator color="#0a0a0a" />
+                    ) : (
+                      <Feather name="arrow-right" size={18} color="#0a0a0a" />
+                    )
+                  }
+                  label={busy ? "Sending…" : "Send code"}
+                  onPress={handleSendCode}
+                />
+                <Pressable
+                  onPress={() => {
+                    setError(null);
+                    setMode("choose");
+                  }}
+                  className="active:opacity-60"
+                >
+                  <Text
+                    className="text-ink-dim font-sans text-center"
+                    style={{ fontSize: 13, marginTop: 4 }}
+                  >
+                    Use a different option
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {mode === "code" ? (
+              <View style={{ gap: 12 }}>
+                <Field
+                  value={code}
+                  onChangeText={(t) => setCode(t.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  keyboardType="number-pad"
+                  textContentType="oneTimeCode"
+                  autoComplete="sms-otp"
+                  maxLength={6}
+                  autoFocus
+                  returnKeyType="go"
+                  onSubmitEditing={code.length === 6 ? handleVerify : undefined}
+                  style={{ letterSpacing: 8, textAlign: "center" }}
+                />
+                <AuthButton
+                  variant="solid"
+                  disabled={busy || code.length < 6}
+                  icon={
+                    busy ? (
+                      <ActivityIndicator color="#0a0a0a" />
+                    ) : (
+                      <Feather name="check" size={18} color="#0a0a0a" />
+                    )
+                  }
+                  label={busy ? "Verifying…" : "Verify & continue"}
+                  onPress={handleVerify}
+                />
+                <View className="flex-row items-center justify-between px-1">
+                  <Pressable
+                    onPress={() => {
+                      setError(null);
+                      setCode("");
+                      setMode("email");
+                    }}
+                    className="active:opacity-60"
+                  >
+                    <Text
+                      className="text-ink-dim font-sans"
+                      style={{ fontSize: 13 }}
+                    >
+                      Change email
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleSendCode}
+                    disabled={busy}
+                    className="active:opacity-60"
+                  >
+                    <Text
+                      className="text-ink-dim font-sans"
+                      style={{ fontSize: 13 }}
+                    >
+                      Resend code
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+
+            {error ? (
+              <Text
+                className="font-sans text-center"
+                style={{
+                  color: "#FF6B81",
+                  fontSize: 13,
+                  lineHeight: 18,
+                  marginTop: 14,
+                }}
+              >
+                {error}
+              </Text>
+            ) : null}
+
+            {mode === "choose" ? (
+              <Text
+                className="text-ink-faint font-sans text-center"
+                style={{ fontSize: 11, lineHeight: 16, marginTop: 22 }}
+              >
+                By continuing you agree to our{" "}
+                <Text
+                  onPress={() => router.push("/legal/terms")}
+                  style={{
+                    color: "rgba(255,255,255,0.7)",
+                    textDecorationLine: "underline",
+                  }}
+                >
+                  Terms
+                </Text>{" "}
+                and{" "}
+                <Text
+                  onPress={() => router.push("/legal/privacy")}
+                  style={{
+                    color: "rgba(255,255,255,0.7)",
+                    textDecorationLine: "underline",
+                  }}
+                >
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+            ) : null}
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );
