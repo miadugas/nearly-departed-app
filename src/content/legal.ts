@@ -6,7 +6,7 @@ export const PRIVACY_POLICY = `# Privacy Policy — Nearly Departed
 **Effective date:** June 18, 2026
 **Last updated:** June 18, 2026
 
-This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") handles information when you use it. The App is operated by Grave Goods, LLC based in Littleton, Colorado, USA. Contact: admin@gravegoodsgoodies.com.
+This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") handles information when you use it. The App is operated by Grave Goods, LLC based in Littleton, Colorado, USA. Contact: nearlydepartedapp@gmail.com.
 
 ## The short version
 
@@ -62,7 +62,7 @@ We do not maintain servers that store your personal data, so we retain none. On-
 
 ## Your rights
 
-Depending on where you live, you may have rights to access, correct, delete, or restrict processing of personal data (e.g. under GDPR or CCPA/CPRA). Because we do not store personal data ourselves, most such requests are satisfied by controlling permissions on your device (location) and deleting local data (uninstalling the App). For requests concerning data held by the third-party services above, please contact those providers directly. You may also contact us at admin@gravegoodsgoodies.com.
+Depending on where you live, you may have rights to access, correct, delete, or restrict processing of personal data (e.g. under GDPR or CCPA/CPRA). Because we do not store personal data ourselves, most such requests are satisfied by controlling permissions on your device (location) and deleting local data (uninstalling the App). For requests concerning data held by the third-party services above, please contact those providers directly. You may also contact us at nearlydepartedapp@gmail.com.
 
 ## Children's privacy
 
@@ -78,7 +78,7 @@ We may update this policy as the App evolves (for example, when accounts are add
 
 ## Contact
 
-Questions? Contact Grave Goods, LLC at admin@gravegoodsgoodies.com.
+Questions? Contact Grave Goods, LLC at nearlydepartedapp@gmail.com.
 `;
 
 export const TERMS_OF_SERVICE = `# Terms of Service — Nearly Departed
@@ -163,5 +163,5 @@ If you obtained the App through the Apple App Store, you acknowledge these Terms
 
 ## 15. Contact
 
-Questions? Contact Grave Goods, LLC at admin@gravegoodsgoodies.com
+Questions? Contact Grave Goods, LLC at nearlydepartedapp@gmail.com
 `;

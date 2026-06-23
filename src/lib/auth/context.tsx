@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 import { supabase } from "@/lib/supabase";
 
@@ -18,6 +19,7 @@ type AuthContextValue = {
   // no redirect web page — the user just types the code from their inbox.
   sendCode: (email: string) => Promise<void>;
   verifyCode: (email: string, code: string) => Promise<void>;
+  signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -58,6 +60,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: email.trim(),
           token: code.trim(),
           type: "email",
+        });
+        if (error) throw error;
+      },
+      signInWithApple: async () => {
+        const credential = await AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+        });
+        if (!credential.identityToken) {
+          throw new Error("Apple didn't return an identity token.");
+        }
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: "apple",
+          token: credential.identityToken,
         });
         if (error) throw error;
       },

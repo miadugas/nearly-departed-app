@@ -6,7 +6,6 @@ import { router } from "expo-router";
 import { useState, type ComponentProps, type ReactNode } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -20,8 +19,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BackButton } from "@/components/icon-button";
 import { useAuth } from "@/lib/auth/context";
 
-// Apple/Google are still stubs (separate native-config lift). "Continue with
-// email" is live: passwordless 6-digit code via Supabase — no deep links.
+// Two real options: Sign in with Apple (native) and passwordless email code,
+// both through Supabase. No Google — it would force Apple anyway (App Store
+// 4.8) and adds native-config churn for marginal payoff on an iOS-first app.
 function AuthButton({
   icon,
   label,
@@ -90,7 +90,7 @@ function Field({ style, ...props }: ComponentProps<typeof TextInput>) {
           borderWidth: 1,
           borderColor: "rgba(255,255,255,0.26)",
           color: "#fff",
-          fontFamily: "PlusJakartaSans_500Medium",
+          fontFamily: "PlusJakartaSans_400Regular",
           fontSize: 16,
         },
         style,
@@ -118,19 +118,42 @@ const COPY: Record<Mode, { title: ReactNode; subtitle: string }> = {
   },
 };
 
+// Sign in with Apple is fully wired (signInWithApple in the context + the
+// button below) but gated OFF: it's a paid-Apple-Developer-Program capability,
+// and its entitlement blocks even simulator builds until signing is set up.
+// To re-enable: flip this to true, restore app.json (ios.usesAppleSignIn +
+// the "expo-apple-authentication" plugin), then `expo prebuild --clean`.
+const APPLE_SIGN_IN_ENABLED = false;
+
 export default function Auth() {
-  const { sendCode, verifyCode } = useAuth();
+  const { sendCode, verifyCode, signInWithApple } = useAuth();
   const [mode, setMode] = useState<Mode>("choose");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const soon = () =>
-    Alert.alert(
-      "Coming soon",
-      "Apple and Google sign-in aren't wired up yet — use email for now.",
-    );
+  const handleApple = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await signInWithApple();
+      // onAuthStateChange persists the session; drop the user into the app.
+      router.replace({ pathname: "/explore", params: { locate: "0" } });
+    } catch (e) {
+      // Dismissing the Apple sheet isn't an error.
+      const canceled =
+        e !== null &&
+        typeof e === "object" &&
+        "code" in e &&
+        e.code === "ERR_REQUEST_CANCELED";
+      if (!canceled) {
+        setError(e instanceof Error ? e.message : "Apple sign-in failed.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleSendCode = async () => {
     setError(null);
@@ -213,31 +236,22 @@ export default function Auth() {
 
             {mode === "choose" ? (
               <View style={{ gap: 12 }}>
-                <AuthButton
-                  variant="solid"
-                  icon={
-                    <FontAwesome
-                      name="apple"
-                      size={19}
-                      color="#0a0a0a"
-                      style={{ marginTop: -2 }}
-                    />
-                  }
-                  label="Continue with Apple"
-                  onPress={soon}
-                />
-                <AuthButton
-                  variant="solid"
-                  icon={
-                    <Image
-                      source={require("../../assets/google-g.png")}
-                      style={{ width: 18, height: 18 }}
-                      contentFit="contain"
-                    />
-                  }
-                  label="Continue with Google"
-                  onPress={soon}
-                />
+                {APPLE_SIGN_IN_ENABLED && Platform.OS === "ios" ? (
+                  <AuthButton
+                    variant="solid"
+                    disabled={busy}
+                    icon={
+                      <FontAwesome
+                        name="apple"
+                        size={19}
+                        color="#0a0a0a"
+                        style={{ marginTop: -2 }}
+                      />
+                    }
+                    label="Continue with Apple"
+                    onPress={handleApple}
+                  />
+                ) : null}
                 <AuthButton
                   variant="glass"
                   icon={<Feather name="mail" size={18} color="#fff" />}
@@ -299,14 +313,15 @@ export default function Auth() {
                 <Field
                   value={code}
                   onChangeText={(t) => setCode(t.replace(/\D/g, ""))}
-                  placeholder="123456"
+                  placeholder="12345678"
                   keyboardType="number-pad"
                   textContentType="oneTimeCode"
                   autoComplete="sms-otp"
-                  maxLength={6}
+                  // Supabase OTP length is configurable (6–10) — don't hard-code it.
+                  maxLength={10}
                   autoFocus
                   returnKeyType="go"
-                  onSubmitEditing={code.length === 6 ? handleVerify : undefined}
+                  onSubmitEditing={code.length >= 6 ? handleVerify : undefined}
                   style={{ letterSpacing: 8, textAlign: "center" }}
                 />
                 <AuthButton

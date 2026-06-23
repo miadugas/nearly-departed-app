@@ -80,4 +80,4 @@ If you obtained the App through the Apple App Store, you acknowledge these Terms
 
 ## 15. Contact
 
-Questions? Contact Grave Goods, LLC at admin@gravegoodsgoodies.com
+Questions? Contact Grave Goods, LLC at nearlydepartedapp@gmail.com

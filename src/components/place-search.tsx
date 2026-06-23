@@ -42,7 +42,11 @@ export function PlaceSearch({ onPick }: { onPick: (place: Place) => void }) {
           placeholder="Search a place — city, cemetery…"
           placeholderTextColor="rgba(255,255,255,0.38)"
           className="text-ink flex-1"
-          style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 14 }}
+          style={{
+            fontFamily: "PlusJakartaSans_400Regular",
+            fontSize: 14,
+            letterSpacing: 0,
+          }}
           autoCorrect={false}
           autoCapitalize="words"
           returnKeyType="search"
