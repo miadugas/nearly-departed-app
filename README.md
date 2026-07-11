@@ -1,56 +1,91 @@
-# Welcome to your Expo app 👋
+# Nearly Departed
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Who's buried near you, and why did they matter? Discovery-first, story-first — the inverse of search-first apps like Find a Grave.
 
-## Get started
+<p>
+  <img src="docs/screenshots/01-onboarding.jpg" width="240" alt="Onboarding screen" />
+  <img src="docs/screenshots/02-discovery.jpg" width="240" alt="Discovery map and list" />
+  <img src="docs/screenshots/03-person.jpg" width="240" alt="Person detail screen" />
+</p>
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- **Discover** — nearby notable dead within a chosen radius (10 / 25 / 50 / 150 km), grouped by cemetery on a map and in a list
+- **Search anywhere** — drop the radius on any place in the world, not just your current location
+- **Person detail** — bio, dates, occupations, and a Wikipedia summary per soul
+- **Favorites** — save people locally, works offline, no account required
+- **Auth** — optional passwordless email OTP or Sign in with Apple (for syncing favorites later)
+- **Localized results** — SPARQL query returns labels in the device language, falling back to English
 
-2. Start the app
+## Data sources
 
-   ```bash
-   npx expo start
-   ```
+No API keys required — all public, unauthenticated endpoints:
 
-In the output, you'll find options to open the app in a
+- **Wikidata SPARQL** (`query.wikidata.org`) — burial place (P119) + coordinates (P625) via `wikibase:around`; nearest-150 subquery first, then enrich, to keep dense-city queries fast
+- **Wikipedia REST summary API** — bio text for the person detail screen
+- **Photon** (komoot, OpenStreetMap-based) — geocoding for "search anywhere"
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Tech stack
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- [Expo](https://expo.dev) SDK 56 (React Native 0.85, CNG — `ios`/`android` are generated, not hand-edited)
+- [expo-router](https://docs.expo.dev/router/introduction/) (typed routes) + TypeScript
+- [NativeWind](https://www.nativewind.dev/) (Tailwind for React Native)
+- [TanStack Query](https://tanstack.com/query) for data fetching/caching
+- [MapLibre](https://github.com/maplibre/maplibre-react-native) (`@maplibre/maplibre-react-native`), CARTO dark-matter style
+- `expo-location` for device location
+- [Supabase](https://supabase.com) — passwordless email OTP + Apple sign-in
+- AsyncStorage-backed local favorites behind a `FavoritesRepository` interface (`src/lib/favorites/`) — swappable for a Supabase-backed implementation later without touching call sites
 
-## Get a fresh project
-
-When you're ready, run:
+## Getting started
 
 ```bash
-npm run reset-project
+npm install
+npx expo start --dev-client
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Expo Go will not work — this app has native modules (MapLibre, Apple auth). You need a dev client build first (see below).
 
-### Other setup steps
+## Building for iOS
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+RCT_USE_PREBUILT_RNCORE=0 RCT_USE_RN_DEP=1 npx expo run:ios
+```
 
-## Learn more
+Notes:
 
-To learn more about developing your project with Expo, look at the following resources:
+- The project path must contain **no spaces** — the React Native prebuilt-artifact download breaks otherwise.
+- After adding any native module, run `npx expo prebuild --no-install` and `pod install` before `run:ios`.
+- Day-to-day loop once a dev client is installed: `npx expo start --dev-client`.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Project structure
 
-## Join the community
+```
+src/app/           expo-router routes (index, explore, person/[qid], auth, profile, legal/)
+src/components/    UI components (soul-card, souls-map, place-search, ...)
+src/lib/           wikidata.ts, wikipedia.ts, geocode.ts, supabase.ts, favorites/
+src/hooks/         use-nearby-souls, use-device-location, use-theme
+legal/             source markdown for privacy policy + terms (synced into the app — see scripts/sync-legal.mjs)
+```
 
-Join our community of developers creating universal apps.
+## Scripts
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `npm run ios` / `npm run android` — native builds (run the sync-legal prestep automatically)
+- `npm run web` — Expo web
+- `npm test` — vitest, logic-only tests (`src/**/*.test.ts`; wikidata, geocode, favorites)
+- `npm run test:watch`
+- `npm run lint` — `expo lint`
+
+## Legal
+
+Privacy policy, terms of service, and support are also published at [nearly-departed-promo.pages.dev](https://nearly-departed-promo.pages.dev):
+
+- [Privacy policy](https://nearly-departed-promo.pages.dev/privacy)
+- [Terms of service](https://nearly-departed-promo.pages.dev/terms)
+- [Support](https://nearly-departed-promo.pages.dev/support)
+
+Source markdown lives in `legal/` and is synced into `src/content/legal.ts` for the in-app screens (`src/app/legal/`) by `scripts/sync-legal.mjs`.
+
+## License
+
+Proprietary — copyright (c) 2026 Mia Dugas, all rights reserved. See [LICENSE](LICENSE).
