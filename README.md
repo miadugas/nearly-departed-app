@@ -78,11 +78,11 @@ legal/             source markdown for privacy policy + terms (synced into the a
 
 ## Legal
 
-Privacy policy, terms of service, and support are also published at [nearly-departed-promo.pages.dev](https://nearly-departed-promo.pages.dev):
+Privacy policy, terms of service, and support are also published at [nearly-departed.miacodes.com](https://nearly-departed.miacodes.com):
 
-- [Privacy policy](https://nearly-departed-promo.pages.dev/privacy)
-- [Terms of service](https://nearly-departed-promo.pages.dev/terms)
-- [Support](https://nearly-departed-promo.pages.dev/support)
+- [Privacy policy](https://nearly-departed.miacodes.com/privacy)
+- [Terms of service](https://nearly-departed.miacodes.com/terms)
+- [Support](https://nearly-departed.miacodes.com/support)
 
 Source markdown lives in `legal/` and is synced into `src/content/legal.ts` for the in-app screens (`src/app/legal/`) by `scripts/sync-legal.mjs`.
 
