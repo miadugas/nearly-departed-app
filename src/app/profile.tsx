@@ -4,12 +4,23 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { type ComponentProps } from "react";
-import { Alert, FlatList, Linking, Pressable, Text, View } from "react-native";
+import { type ComponentProps, type ReactNode, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/icon-button";
 import { useAuth } from "@/lib/auth/context";
+import { AVATARS, avatarSource, type AvatarId } from "@/lib/avatar/avatars";
+import { useAvatar } from "@/lib/avatar/context";
 import { useFavorites } from "@/lib/favorites/context";
 import type { FavoriteSoul } from "@/lib/favorites/types";
 import { thumbUrl, year } from "@/lib/wikidata";
@@ -83,6 +94,147 @@ function FavoriteRow({
   );
 }
 
+// One cell in the avatar picker grid — a fixed-size ring that only shows
+// color when selected, wrapping a constant-size circular thumbnail so
+// selecting/deselecting never nudges the artwork inside it.
+function AvatarCell({
+  selected,
+  label,
+  onPress,
+  children,
+}: {
+  selected: boolean;
+  label: string;
+  onPress: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <View style={{ width: "25%", alignItems: "center", paddingVertical: 10 }}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={{
+          width: 68,
+          height: 68,
+          borderRadius: 34,
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: selected ? 2 : 0,
+          borderColor: "#FF6B81",
+        }}
+      >
+        <View
+          className="border-line"
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            overflow: "hidden",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(255,255,255,0.06)",
+            borderWidth: 1,
+          }}
+        >
+          {children}
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+// Bottom-sheet avatar picker — a transparent, slide-up Modal (no new deps)
+// matching the app's dark idiom. "None" is a pinned first cell that clears
+// the selection back to the skull/initial default.
+function AvatarPickerModal({
+  visible,
+  selected,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  selected: AvatarId | null;
+  onClose: () => void;
+  onSelect: (id: AvatarId | null) => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={{ flex: 1, justifyContent: "flex-end" }}>
+        <Pressable
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close avatar picker"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.6)",
+          }}
+        />
+        <SafeAreaView
+          edges={["bottom"]}
+          className="bg-bg border-t border-line"
+          style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+        >
+          <Text
+            className="text-ink-faint px-5 pb-3 pt-5"
+            style={{
+              fontFamily: "PlusJakartaSans_600SemiBold",
+              fontSize: 11,
+              letterSpacing: 1.6,
+              textTransform: "uppercase",
+            }}
+          >
+            Choose your ghoul
+          </Text>
+          <ScrollView
+            contentContainerStyle={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              paddingHorizontal: 12,
+              paddingBottom: 24,
+            }}
+          >
+            <AvatarCell
+              selected={selected === null}
+              label="None"
+              onPress={() => onSelect(null)}
+            >
+              <MaterialCommunityIcons
+                name="skull-outline"
+                size={28}
+                color="rgba(255,255,255,0.5)"
+              />
+            </AvatarCell>
+            {AVATARS.map((avatar) => (
+              <AvatarCell
+                key={avatar.id}
+                selected={selected === avatar.id}
+                label={avatar.label}
+                onPress={() => onSelect(avatar.id)}
+              >
+                <Image
+                  source={avatar.source}
+                  style={{ width: 60, height: 60 }}
+                  contentFit="cover"
+                />
+              </AvatarCell>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    </Modal>
+  );
+}
+
 const APP_VERSION = Constants.expoConfig?.version ?? "1.0.0";
 
 // Settings/about row — icon, label, chevron. Matches the app's list idiom
@@ -113,6 +265,8 @@ function LinkRow({
 export default function Profile() {
   const { favorites, remove, isReady } = useFavorites();
   const { user, signOut } = useAuth();
+  const { avatarId, setAvatarId } = useAvatar();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const signedIn = !!user;
   const email = user?.email ?? "";
@@ -147,25 +301,58 @@ export default function Profile() {
             <View>
               {/* profile block — signed-in identity or guest CTA */}
               <View className="items-center px-6 pb-6 pt-4">
-                <View
-                  className="h-[76px] w-[76px] items-center justify-center rounded-full border border-line"
-                  style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
+                <Pressable
+                  onPress={() => setPickerOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change avatar"
+                  style={{ width: 76, height: 76 }}
                 >
-                  {signedIn ? (
-                    <Text
-                      className="text-ink font-display"
-                      style={{ fontSize: 32 }}
-                    >
-                      {avatarInitial}
-                    </Text>
-                  ) : (
-                    <MaterialCommunityIcons
-                      name="skull-outline"
-                      size={36}
-                      color="rgba(255,255,255,0.5)"
-                    />
-                  )}
-                </View>
+                  <View
+                    className="h-[76px] w-[76px] items-center justify-center rounded-full border border-line"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.06)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {avatarId ? (
+                      <Image
+                        source={avatarSource(avatarId)}
+                        style={{ width: 76, height: 76 }}
+                        contentFit="cover"
+                      />
+                    ) : signedIn ? (
+                      <Text
+                        className="text-ink font-display"
+                        style={{ fontSize: 32 }}
+                      >
+                        {avatarInitial}
+                      </Text>
+                    ) : (
+                      <MaterialCommunityIcons
+                        name="skull-outline"
+                        size={36}
+                        color="rgba(255,255,255,0.5)"
+                      />
+                    )}
+                  </View>
+                  <View
+                    className="border-line"
+                    style={{
+                      position: "absolute",
+                      bottom: -2,
+                      right: -2,
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "rgba(255,255,255,0.12)",
+                    }}
+                  >
+                    <Feather name="edit-2" size={12} color="#fff" />
+                  </View>
+                </Pressable>
                 <Text
                   className="text-ink font-display mt-4"
                   style={{ fontSize: 24, letterSpacing: -0.5 }}
@@ -178,7 +365,7 @@ export default function Profile() {
                   style={{ fontSize: 13, lineHeight: 18 }}
                 >
                   {signedIn
-                    ? "You're signed in."
+                    ? "You're signed in — saves sync to your account."
                     : "Not signed in — your saves live on this device."}
                 </Text>
 
@@ -320,6 +507,16 @@ export default function Profile() {
           }
         />
       </SafeAreaView>
+
+      <AvatarPickerModal
+        visible={pickerOpen}
+        selected={avatarId}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(id) => {
+          setAvatarId(id);
+          setPickerOpen(false);
+        }}
+      />
     </View>
   );
 }

@@ -6,6 +6,8 @@ Who's buried near you, and why did they matter? Discovery-first, story-first —
   <img src="docs/screenshots/01-onboarding.jpg" width="240" alt="Onboarding screen" />
   <img src="docs/screenshots/02-discovery.jpg" width="240" alt="Discovery map and list" />
   <img src="docs/screenshots/03-person.jpg" width="240" alt="Person detail screen" />
+  <img src="docs/screenshots/04-profile.jpg" width="240" alt="Profile with avatar and saved souls" />
+  <img src="docs/screenshots/05-avatar-picker.jpg" width="240" alt="Avatar picker — choose your ghoul" />
 </p>
 
 ## Features
@@ -14,7 +16,8 @@ Who's buried near you, and why did they matter? Discovery-first, story-first —
 - **Search anywhere** — drop the radius on any place in the world, not just your current location
 - **Person detail** — bio, dates, occupations, and a Wikipedia summary per soul
 - **Favorites** — save people locally, works offline, no account required
-- **Auth** — optional passwordless email OTP or Sign in with Apple (for syncing favorites later)
+- **Avatars** — pick your ghoul from 16 hand-drawn monster stickers, no account required
+- **Account sync** — optional passwordless email OTP or Sign in with Apple; favorites and avatar mirror to Supabase (local-first — signing out keeps everything on device)
 - **Localized results** — SPARQL query returns labels in the device language, falling back to English
 
 ## Data sources

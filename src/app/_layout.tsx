@@ -12,6 +12,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 import { AuthProvider } from "@/lib/auth/context";
+import { AvatarProvider } from "@/lib/avatar/context";
 import { FavoritesProvider } from "@/lib/favorites/context";
 
 const queryClient = new QueryClient();
@@ -32,16 +33,18 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <FavoritesProvider>
-          <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: "#050505" },
-              animation: "slide_from_right",
-            }}
-          />
-        </FavoritesProvider>
+        <AvatarProvider>
+          <FavoritesProvider>
+            <StatusBar style="light" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: "#050505" },
+                animation: "slide_from_right",
+              }}
+            />
+          </FavoritesProvider>
+        </AvatarProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
