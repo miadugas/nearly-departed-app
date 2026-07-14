@@ -477,6 +477,11 @@ export default function Profile() {
               </Text>
               <View className="border-t border-line">
                 <LinkRow
+                  icon="compass"
+                  label="Cemetourists — the do's & don'ts"
+                  onPress={() => router.push("/cemetourists")}
+                />
+                <LinkRow
                   icon="mail"
                   label="Support"
                   onPress={() => {

@@ -22,6 +22,11 @@ visit → confirmed markers → better trails._
 7. [ ] **Then pitch one historical society**, with usage numbers and a working trail as
        the demo.
 
+**Decided, parked (2026-07-14): daylight map toggle.** If field use confirms sunlight
+glare, add a toggle that swaps only the map style to a light basemap — dark chrome
+stays (it's the brand). No full light theme without a new decision. Slots naturally
+into the trail #1 field-walk (next #3).
+
 ## Nopes
 
 - **No general burial database.** All-graves ambition is Ancestry's turf (Find a Grave:
