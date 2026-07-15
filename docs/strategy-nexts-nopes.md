@@ -1,42 +1,64 @@
 # Strategy — Next's and Nopes
 
 _2026-07-14. Distilled from the moat discussion: the defensible position is curated
-trails + a verified-location layer scoped to notable graves — "the verified, walkable
-canon of graves worth visiting" — not a general burial database. Flywheel: trail →
-visit → confirmed markers → better trails._
+processions (guided cemetery walks) + a verified-location layer scoped to notable
+graves — "the verified, walkable canon of graves worth visiting" — not a general
+burial database. Flywheel: procession → visit → confirmed markers → better
+processions._
+
+## Naming (decided 2026-07-14)
+
+- **Cemetourists** — the identity/community umbrella (etiquette page shipped).
+- **Processions** — the product name for guided walks. A single walk is "a
+  procession"; city packs are "The Denver Processions"; CTA register: "Begin the
+  procession." Reserved: "the Cortège" as a possible all-access tier name.
+- Don't compound the two into one label.
+
+## Monetization frame (decided 2026-07-14)
+
+**Discovery free forever; guided experiences paid.** Never gate map, search,
+favorites, or sync. Sequence: one-time city packs ($4–8) first; all-access
+subscription ($20–30/yr) only once the catalog clears ~10 processions across 3+
+cities. The first procession in every city stays free (flywheel seed). Trail schema
+ships with an `entitlement` field from day one.
 
 ## Next's
 
 1. [ ] **Ship v1.0.** Avatar picker + account sync runtime-verified 2026-07-14; nothing
        strategic happens until it's in the store.
-2. [ ] **Hand-build trail #1: Littleton Cemetery.** Packer is the star. 10–15 stops,
-       walk order, 2–3 editorial sentences each. Schema: `trails` + ordered stops by qid.
+2. [ ] **Hand-build procession #1: Littleton Cemetery.** Packer is the star. 10–15
+       stops, walk order, 2–3 editorial sentences each. Schema: `processions` +
+       ordered stops by qid + `entitlement`.
 3. [ ] **Walk it once, fix the pins by hand.** That walk is the verified-location layer,
-       v0. No UGC system — just correct coordinates for graves on a trail.
+       v0. No UGC system — just correct coordinates for graves on a procession.
 4. [ ] **One-tap "right spot?" confirm** on person detail, shown only within ~50m of the
        pin. Cheapest field-data capture; writes to a `location_reports` table.
-5. [ ] **Trails #2–3 in Denver** (labor history, women of Colorado). Three trails is the
-       minimum to see completion/save/abandon patterns.
+5. [ ] **Processions #2–3 in Denver** (labor history, women of Colorado). Three
+       processions is the minimum to see completion/save/abandon patterns.
 6. [ ] **Instrument the funnel** — discover → detail → directions → confirm. An events
        table in Supabase is enough.
-7. [ ] **Then pitch one historical society**, with usage numbers and a working trail as
-       the demo.
+7. [ ] **Then pitch one historical society**, with usage numbers and a working
+       procession as the demo.
 
 **Decided, parked (2026-07-14): daylight map toggle.** If field use confirms sunlight
 glare, add a toggle that swaps only the map style to a light basemap — dark chrome
 stays (it's the brand). No full light theme without a new decision. Slots naturally
-into the trail #1 field-walk (next #3).
+into the procession #1 field-walk (next #3).
 
 ## Nopes
 
 - **No general burial database.** All-graves ambition is Ancestry's turf (Find a Grave:
   ~250M records, 25 years of family-motivated contributors).
 - **No UGC contribution system yet.** Tourists browse, family contributes — we have
-  tourists. Visit intent comes first (trails); contributions fall out as a byproduct.
+  tourists. Visit intent comes first (processions); contributions fall out as a
+  byproduct.
 - **No recommendation engine yet.** Personalization needs behavior data that won't exist
   for months.
-- **No partnerships-first.** Nothing to offer an institution until trails have users.
+- **No partnerships-first.** Nothing to offer an institution until processions have
+  users.
 - **No AI-bio or map-polish sprints as strategy.** Features, not moats — fine to do,
   never the bet.
 - **No scraping Find a Grave.** Licensing risk, and it imports their data model — the
   thing this app is inverting.
+- **No paywall on discovery.** Charging for the map/search would poison the flywheel
+  and it's public data anyway. The walk is the product, not the door.

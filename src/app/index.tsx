@@ -15,9 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const TAGLINES = [
   "The most interesting people nearby are already dead.",
-  "Meet the neighbors you never knew you had.",
   "Meet the locals. The permanent ones.",
-  "The nearly departed, near you.",
   "Remarkable lives, just underfoot.",
 ];
 
