@@ -10,10 +10,16 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { LogBox } from "react-native";
 
 import { AuthProvider } from "@/lib/auth/context";
 import { AvatarProvider } from "@/lib/avatar/context";
 import { FavoritesProvider } from "@/lib/favorites/context";
+
+// Supabase's session refresh retries by design when the backend is unreachable
+// (e.g. free-tier project paused); sync degrades to local-only on purpose, so
+// this specific retryable error is noise. Any other auth error stays loud.
+LogBox.ignoreLogs([/AuthRetryableFetchError/]);
 
 const queryClient = new QueryClient();
 

@@ -1,7 +1,7 @@
 # Terms of Service — Nearly Departed
 
 **Effective date:** June 18, 2026
-**Last updated:** June 18, 2026
+**Last updated:** August 16, 2026
 
 These Terms of Service ("Terms") govern your use of the **Nearly Departed** mobile application ("the App"), operated by Grave Goods, LLC ("we," "us"), based in Littleton, Colorado, USA. By downloading or using the App, you agree to these Terms. If you do not agree, do not use the App.
 
@@ -37,7 +37,7 @@ You agree not to:
 
 ## 6. Your content (favorites)
 
-Any items you save (e.g. favorites) are stored on your device. You are responsible for your own use of saved information.
+For guests, any items you save (e.g. favorites) are stored on your device. If you sign in, your favorites and chosen avatar id are also synced to your account. You are responsible for your own use of saved information.
 
 ## 7. Intellectual property and open-data licenses
 

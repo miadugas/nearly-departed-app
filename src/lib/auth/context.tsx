@@ -6,10 +6,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session, User } from "@supabase/supabase-js";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { Platform } from "react-native";
 
-import { supabase } from "@/lib/supabase";
+import { AUTH_STORAGE_KEY, supabase } from "@/lib/supabase";
 
 type AuthContextValue = {
   session: Session | null;
@@ -21,6 +23,9 @@ type AuthContextValue = {
   verifyCode: (email: string, code: string) => Promise<void>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
+  // Permanently deletes the account server-side (App Store Guideline 5.1.1(v)
+  // requires this to be reachable in-app), then clears the local session.
+  deleteAccount: () => Promise<{ appleRevoked: boolean | null }>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -82,6 +87,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
+      },
+      deleteAccount: async () => {
+        const hasAppleIdentity =
+          session?.user.identities?.some(
+            (identity) => identity.provider === "apple",
+          ) ?? false;
+        let appleAuthorizationCode: string | undefined;
+
+        if (hasAppleIdentity && Platform.OS === "ios") {
+          try {
+            const credential = await AppleAuthentication.signInAsync();
+            appleAuthorizationCode = credential.authorizationCode ?? undefined;
+          } catch {
+            // Deletion continues if the Apple re-auth sheet is canceled or fails.
+          }
+        }
+
+        const { data, error } = await supabase.functions.invoke<{
+          revoked?: boolean;
+        }>("delete-account", {
+          method: "POST",
+          ...(appleAuthorizationCode
+            ? { body: { appleAuthorizationCode } }
+            : {}),
+        });
+        if (error) throw error;
+        // The server-side user is gone, so a global sign-out would 4xx —
+        // drop the session on this device only. signOut resolves (not rejects)
+        // with { error } and keeps the persisted session when its server call
+        // fails, so evict storage and state by hand in that case: a deleted
+        // account must never resurface as signed-in.
+        const { error: signOutError } = await supabase.auth.signOut({
+          scope: "local",
+        });
+        if (signOutError) {
+          await AsyncStorage.multiRemove([
+            AUTH_STORAGE_KEY,
+            `${AUTH_STORAGE_KEY}-code-verifier`,
+          ]).catch(() => {});
+          setSession(null);
+        }
+
+        return {
+          appleRevoked: hasAppleIdentity ? data?.revoked === true : null,
+        };
       },
     }),
     [session, isReady],

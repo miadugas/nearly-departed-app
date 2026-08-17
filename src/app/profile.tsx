@@ -264,13 +264,49 @@ function LinkRow({
 
 export default function Profile() {
   const { favorites, remove, isReady } = useFavorites();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
   const { avatarId, setAvatarId } = useAvatar();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const signedIn = !!user;
   const email = user?.email ?? "";
   const avatarInitial = (email || "?").trim().charAt(0).toUpperCase();
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete account?",
+      "This permanently deletes your account and any synced data. Saves on this device are kept. This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete account",
+          style: "destructive",
+          onPress: () => {
+            setDeleting(true);
+            deleteAccount()
+              .then(({ appleRevoked }) => {
+                const manualRevocationInstructions =
+                  appleRevoked === false
+                    ? "\n\nTo revoke Sign in with Apple manually: Settings → [your name] → Sign-In & Security → Sign in with Apple → Nearly Departed → Stop Using."
+                    : "";
+                Alert.alert(
+                  "Account deleted",
+                  `Your account and synced data are gone. Your on-device saves are still here.${manualRevocationInstructions}`,
+                );
+              })
+              .catch(() => {
+                Alert.alert(
+                  "Couldn't delete account",
+                  "Something went wrong. Check your connection and try again, or email nearlydepartedapp@gmail.com.",
+                );
+              })
+              .finally(() => setDeleting(false));
+          },
+        },
+      ],
+    );
+  };
 
   const handleSignOut = () => {
     Alert.alert("Sign out?", "You can sign back in anytime with your email.", [
@@ -370,25 +406,42 @@ export default function Profile() {
                 </Text>
 
                 {signedIn ? (
-                  <Pressable
-                    onPress={handleSignOut}
-                    className="mt-5 flex-row items-center gap-2 rounded-full active:opacity-80"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,0.06)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255,255,255,0.18)",
-                      paddingVertical: 11,
-                      paddingHorizontal: 20,
-                    }}
-                  >
-                    <Feather name="log-out" size={15} color="#fff" />
-                    <Text
-                      className="text-ink font-sans-semibold"
-                      style={{ fontSize: 14 }}
+                  <View className="items-center">
+                    <Pressable
+                      onPress={handleSignOut}
+                      className="mt-5 flex-row items-center gap-2 rounded-full active:opacity-80"
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.06)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255,255,255,0.18)",
+                        paddingVertical: 11,
+                        paddingHorizontal: 20,
+                      }}
                     >
-                      Sign out
-                    </Text>
-                  </Pressable>
+                      <Feather name="log-out" size={15} color="#fff" />
+                      <Text
+                        className="text-ink font-sans-semibold"
+                        style={{ fontSize: 14 }}
+                      >
+                        Sign out
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={handleDeleteAccount}
+                      disabled={deleting}
+                      accessibilityRole="button"
+                      accessibilityLabel="Delete account"
+                      className="mt-4 active:opacity-60"
+                      hitSlop={8}
+                    >
+                      <Text
+                        className="font-sans"
+                        style={{ fontSize: 13, color: "#FF6B81" }}
+                      >
+                        {deleting ? "Deleting account…" : "Delete account"}
+                      </Text>
+                    </Pressable>
+                  </View>
                 ) : (
                   <Pressable
                     onPress={() => router.push("/auth")}
