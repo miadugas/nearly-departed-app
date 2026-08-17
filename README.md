@@ -18,6 +18,7 @@ Who's buried near you, and why did they matter? Discovery-first, story-first —
 - **Favorites** — save people locally, works offline, no account required
 - **Avatars** — pick your ghoul from 16 hand-drawn monster stickers, no account required
 - **Account sync** — optional passwordless email OTP or Sign in with Apple; favorites and avatar mirror to Supabase (local-first — signing out keeps everything on device)
+- **Account deletion** — in-app (Profile → Delete account); wipes the synced account and revokes Sign in with Apple tokens, on-device saves stay put
 - **Localized results** — SPARQL query returns labels in the device language, falling back to English
 
 ## Data sources
