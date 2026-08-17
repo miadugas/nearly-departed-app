@@ -1,5 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -118,12 +118,8 @@ const COPY: Record<Mode, { title: ReactNode; subtitle: string }> = {
   },
 };
 
-// Sign in with Apple is fully wired (signInWithApple in the context + the
-// button below) but gated OFF: it's a paid-Apple-Developer-Program capability,
-// and its entitlement blocks even simulator builds until signing is set up.
-// To re-enable: flip this to true, restore app.json (ios.usesAppleSignIn +
-// the "expo-apple-authentication" plugin), then `expo prebuild --clean`.
-const APPLE_SIGN_IN_ENABLED = false;
+// Sign in with Apple uses Apple's native button on iOS. The platform guard
+// below keeps the native component out of other targets.
 
 export default function Auth() {
   const { sendCode, verifyCode, signInWithApple } = useAuth();
@@ -134,6 +130,7 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
 
   const handleApple = async () => {
+    if (busy) return;
     setError(null);
     setBusy(true);
     try {
@@ -236,19 +233,20 @@ export default function Auth() {
 
             {mode === "choose" ? (
               <View style={{ gap: 12 }}>
-                {APPLE_SIGN_IN_ENABLED && Platform.OS === "ios" ? (
-                  <AuthButton
-                    variant="solid"
-                    disabled={busy}
-                    icon={
-                      <FontAwesome
-                        name="apple"
-                        size={19}
-                        color="#0a0a0a"
-                        style={{ marginTop: -2 }}
-                      />
+                {Platform.OS === "ios" ? (
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={
+                      AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
                     }
-                    label="Continue with Apple"
+                    buttonStyle={
+                      AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    }
+                    cornerRadius={27}
+                    style={{
+                      width: "100%",
+                      height: 54,
+                      opacity: busy ? 0.5 : 1,
+                    }}
                     onPress={handleApple}
                   />
                 ) : null}

@@ -17,10 +17,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+// Explicit so account deletion can evict the persisted session directly when
+// the network drops mid-sign-out (supabase-js keeps the session on a failed
+// server /logout, and a deleted account must never resurface as signed-in).
+export const AUTH_STORAGE_KEY = "nearly-departed-auth";
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     // Persist the session in AsyncStorage so a magic-link login survives restarts.
     storage: AsyncStorage,
+    storageKey: AUTH_STORAGE_KEY,
     autoRefreshToken: true,
     persistSession: true,
     // RN has no URL bar — we hand the magic-link code to Supabase ourselves

@@ -4,7 +4,7 @@
 export const PRIVACY_POLICY = `# Privacy Policy — Nearly Departed
 
 **Effective date:** June 18, 2026
-**Last updated:** June 23, 2026
+**Last updated:** August 16, 2026
 
 This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") handles information when you use it. The App is operated by Grave Goods, LLC based in Littleton, Colorado, USA. Contact: nearlydepartedapp@gmail.com.
 
@@ -14,7 +14,7 @@ This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") han
 - We do **not** run analytics or advertising SDKs, and we do **not** sell your data.
 - An account is **optional**. If you create one to sign in, your email address is stored by our authentication provider (Supabase). Otherwise we operate no servers that store your personal data — the App talks directly to a small number of public third-party services to fetch maps and burial records.
 - Your **location** is used to find notable burials near you, and the coordinates are sent to those public services _as part of a query_ to retrieve results.
-- Your **saved favorites** are stored **only on your device**.
+- Guest favorites are stored only on your device. If you sign in, your favorites and chosen avatar id are also synced to your Supabase account.
 
 ## Information we collect and how it's used
 
@@ -33,7 +33,7 @@ When you use "search anywhere," the text you type (e.g. a city or cemetery name)
 When the App contacts a third-party service, that service automatically receives standard network information such as your **IP address** and device/user-agent details, governed by _that service's_ privacy policy (linked below). We do not receive or retain this information.
 
 **4. Favorites and on-device data.**
-Any graves you save are stored locally on your device using the operating system's storage. This data is not transmitted to us and is removed if you delete the App.
+For guests, any graves you save are stored locally on your device using the operating system's storage. If you sign in, your favorites and chosen avatar id are also synced to Supabase, scoped to your account, and deleted when you delete the account. Guest favorites are removed if you delete the App.
 
 **5. Accounts (optional).**
 You can use the entire App as a guest, with no account. If you choose to sign in to identify yourself, the App offers passwordless **email** sign-in and **Sign in with Apple**. When you sign in:
@@ -42,7 +42,7 @@ You can use the entire App as a guest, with no account. If you choose to sign in
 - To deliver your one-time sign-in code, your email address is processed by **Resend**, our email-delivery provider.
 - We never collect or store a password. With Sign in with Apple you may hide your email, in which case Apple supplies a private relay address instead.
 
-Your saved favorites stay on your device and are not uploaded to your account. To delete your account and its data, contact us at nearlydepartedapp@gmail.com.
+For guests, saved favorites stay on your device. If you sign in, your favorites and chosen avatar id are also synced to your Supabase account, scoped to your account, and deleted when you delete the account. You can permanently delete your account and its data in the App (Profile → Delete account), or by contacting us at nearlydepartedapp@gmail.com.
 
 ## What we do **not** do
 
@@ -58,7 +58,7 @@ The App sends requests directly to these services to function. Each has its own 
 - **Wikimedia Foundation** — Wikidata Query Service and the Wikipedia API, used to find burial records, biographies, and images. https://foundation.wikimedia.org/wiki/Policy:Privacy_policy
 - **Komoot (Photon)** — place-name geocoding for "search anywhere." https://www.komoot.com/privacy
 - **CARTO** — dark base-map tiles. https://carto.com/privacy/
-- **Supabase** — authentication and account storage (your email address and account record), used only if you create an account. https://supabase.com/privacy
+- **Supabase** — authentication and account storage (your email address, account record, and signed-in favorites and avatar choice), used only if you create an account. https://supabase.com/privacy
 - **Resend** — delivery of one-time sign-in code emails, used only if you sign in with email. https://resend.com/legal/privacy-policy
 - **Apple** — operating-system location services and Sign in with Apple (if you choose it). https://www.apple.com/legal/privacy/
 
@@ -66,11 +66,11 @@ These services may process data outside your country of residence.
 
 ## Data retention
 
-On-device data (favorites) persists until you remove it or delete the App. If you create an account, your email address and account record are retained by Supabase until you delete your account; contact us and we will delete it. We retain no other personal data on servers of our own.
+On-device data (favorites) persists until you remove it or delete the App. If you create an account, your email address, account record, favorites, and chosen avatar id are retained by Supabase until you delete your account, which you can do in the App (Profile → Delete account) or by contacting us. We do not retain other personal data on servers we operate ourselves.
 
 ## Your rights
 
-Depending on where you live, you may have rights to access, correct, delete, or restrict processing of personal data (e.g. under GDPR or CCPA/CPRA). Because most data stays on your device, many requests are satisfied by controlling device permissions (location) and deleting local data (uninstalling the App). If you have an account, you can request deletion of your account data (email and account record) by contacting us at nearlydepartedapp@gmail.com. For data held by the other third-party services above, please contact those providers directly.
+Depending on where you live, you may have rights to access, correct, delete, or restrict processing of personal data (e.g. under GDPR or CCPA/CPRA). Because most data stays on your device, many requests are satisfied by controlling device permissions (location) and deleting local data (uninstalling the App). If you have an account, you can delete your account data (email, account record, synced favorites, and chosen avatar id) in the App (Profile → Delete account) or by contacting us at nearlydepartedapp@gmail.com. For data held by the other third-party services above, please contact those providers directly.
 
 ## Children's privacy
 
@@ -92,7 +92,7 @@ Questions? Contact Grave Goods, LLC at nearlydepartedapp@gmail.com.
 export const TERMS_OF_SERVICE = `# Terms of Service — Nearly Departed
 
 **Effective date:** June 18, 2026
-**Last updated:** June 18, 2026
+**Last updated:** August 16, 2026
 
 These Terms of Service ("Terms") govern your use of the **Nearly Departed** mobile application ("the App"), operated by Grave Goods, LLC ("we," "us"), based in Littleton, Colorado, USA. By downloading or using the App, you agree to these Terms. If you do not agree, do not use the App.
 
@@ -128,7 +128,7 @@ You agree not to:
 
 ## 6. Your content (favorites)
 
-Any items you save (e.g. favorites) are stored on your device. You are responsible for your own use of saved information.
+For guests, any items you save (e.g. favorites) are stored on your device. If you sign in, your favorites and chosen avatar id are also synced to your account. You are responsible for your own use of saved information.
 
 ## 7. Intellectual property and open-data licenses
 

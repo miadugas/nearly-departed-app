@@ -9,7 +9,11 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/images/ios-icon.png",
-      "bundleIdentifier": "com.miadugas.nearlydeparted"
+      "bundleIdentifier": "com.miadugas.nearlydeparted",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -34,20 +38,24 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#050505",
+          "backgroundColor": "#2d1937",
           "android": {
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           }
         }
       ],
+      "expo-apple-authentication",
       "expo-font",
       "expo-image",
       "@maplibre/maplibre-react-native",
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Nearly Departed uses your location to find the notable dead buried near you."
+          "locationWhenInUsePermission": "Nearly Departed uses your location to find the notable dead buried near you.",
+          "locationAlwaysAndWhenInUsePermission": "Nearly Departed uses your location to find the notable dead buried near you.",
+          "locationAlwaysPermission": "Nearly Departed uses your location to find the notable dead buried near you.",
+          "motionUsagePermission": "Motion activity helps the system improve location accuracy while you explore."
         }
       ]
     ],
