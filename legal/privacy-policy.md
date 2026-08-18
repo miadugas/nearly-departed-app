@@ -1,9 +1,9 @@
 # Privacy Policy — Nearly Departed
 
 **Effective date:** June 18, 2026
-**Last updated:** August 16, 2026
+**Last updated:** August 17, 2026
 
-This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") handles information when you use it. The App is operated by Grave Goods, LLC based in Littleton, Colorado, USA. Contact: nearlydepartedapp@gmail.com.
+This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") handles information when you use it. The App is operated by Small Parts Studio, LLC based in Littleton, Colorado, USA. Contact: nearlydepartedapp@gmail.com.
 
 ## The short version
 
@@ -83,4 +83,4 @@ We may update this policy as the App evolves (for example, when accounts are add
 
 ## Contact
 
-Questions? Contact Grave Goods, LLC at nearlydepartedapp@gmail.com.
+Questions? Contact Small Parts Studio, LLC at nearlydepartedapp@gmail.com.

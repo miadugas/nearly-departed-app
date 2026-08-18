@@ -1,9 +1,9 @@
 # Terms of Service — Nearly Departed
 
 **Effective date:** June 18, 2026
-**Last updated:** August 16, 2026
+**Last updated:** August 17, 2026
 
-These Terms of Service ("Terms") govern your use of the **Nearly Departed** mobile application ("the App"), operated by Grave Goods, LLC ("we," "us"), based in Littleton, Colorado, USA. By downloading or using the App, you agree to these Terms. If you do not agree, do not use the App.
+These Terms of Service ("Terms") govern your use of the **Nearly Departed** mobile application ("the App"), operated by Small Parts Studio, LLC ("we," "us"), based in Littleton, Colorado, USA. By downloading or using the App, you agree to these Terms. If you do not agree, do not use the App.
 
 ## 1. What the App is
 
@@ -41,7 +41,7 @@ For guests, any items you save (e.g. favorites) are stored on your device. If yo
 
 ## 7. Intellectual property and open-data licenses
 
-The App's design, code, and branding are owned by Grave Goods, LLC and protected by intellectual-property laws. The underlying **data and map content are owned by their respective sources and provided under open licenses**, which you must respect:
+The App's design, code, and branding are owned by Small Parts Studio, LLC and protected by intellectual-property laws. The underlying **data and map content are owned by their respective sources and provided under open licenses**, which you must respect:
 
 - **Wikidata** — CC0 (public domain).
 - **Wikipedia** content — CC BY-SA.
@@ -60,11 +60,11 @@ THE APP IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, 
 
 ## 10. Limitation of liability
 
-TO THE MAXIMUM EXTENT PERMITTED BY LAW, Grave Goods, LLC WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS ARISING FROM YOUR USE OF (OR INABILITY TO USE) THE APP OR YOUR RELIANCE ON ANY INFORMATION IN IT, INCLUDING ANYTHING RELATED TO TRAVELING TO OR VISITING A LOCATION. OUR TOTAL LIABILITY WILL NOT EXCEED THE GREATER OF THE AMOUNT YOU PAID FOR THE APP OR USD $0.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, Small Parts Studio, LLC WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS ARISING FROM YOUR USE OF (OR INABILITY TO USE) THE APP OR YOUR RELIANCE ON ANY INFORMATION IN IT, INCLUDING ANYTHING RELATED TO TRAVELING TO OR VISITING A LOCATION. OUR TOTAL LIABILITY WILL NOT EXCEED THE GREATER OF THE AMOUNT YOU PAID FOR THE APP OR USD $0.
 
 ## 11. Indemnification
 
-You agree to indemnify and hold harmless Grave Goods, LLC from any claims or damages arising out of your misuse of the App or violation of these Terms or applicable law.
+You agree to indemnify and hold harmless Small Parts Studio, LLC from any claims or damages arising out of your misuse of the App or violation of these Terms or applicable law.
 
 ## 12. Changes and termination
 
@@ -76,8 +76,8 @@ These Terms are governed by the laws of the **State of Colorado, USA**, without 
 
 ## 14. Apple App Store
 
-If you obtained the App through the Apple App Store, you acknowledge these Terms are between you and Grave Goods LLC, not Apple, and that Apple is not responsible for the App or its content. Apple is a third-party beneficiary of these Terms and may enforce them.
+If you obtained the App through the Apple App Store, you acknowledge these Terms are between you and Small Parts Studio LLC, not Apple, and that Apple is not responsible for the App or its content. Apple is a third-party beneficiary of these Terms and may enforce them.
 
 ## 15. Contact
 
-Questions? Contact Grave Goods, LLC at nearlydepartedapp@gmail.com
+Questions? Contact Small Parts Studio, LLC at nearlydepartedapp@gmail.com

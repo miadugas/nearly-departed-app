@@ -92,4 +92,4 @@ Source markdown lives in `legal/` and is synced into `src/content/legal.ts` for 
 
 ## License
 
-Proprietary — copyright (c) 2026 Mia Dugas, all rights reserved. See [LICENSE](LICENSE).
+Proprietary — copyright (c) 2026 Small Parts Studio, LLC, all rights reserved. See [LICENSE](LICENSE).
