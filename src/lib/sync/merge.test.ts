@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { AvatarId } from "@/lib/avatar/ids";
 import type { FavoriteSoul } from "@/lib/favorites/types";
-import { mergeAvatar, mergeFavorites } from "@/lib/sync/merge";
+import {
+  mergeAvatar,
+  mergeDisplayName,
+  mergeFavorites,
+  sanitizeDisplayName,
+} from "@/lib/sync/merge";
 
 function fav(qid: string, overrides: Partial<FavoriteSoul> = {}): FavoriteSoul {
   return {
@@ -134,6 +139,74 @@ describe("mergeAvatar", () => {
 
   it("ignores an invalid remote avatar id", () => {
     expect(mergeAvatar(null, "not-a-real-avatar")).toEqual({
+      effective: null,
+      pushLocal: false,
+    });
+  });
+});
+
+describe("sanitizeDisplayName", () => {
+  it("trims and collapses internal whitespace", () => {
+    expect(sanitizeDisplayName("  Mia   E   Dugas  ")).toBe("Mia E Dugas");
+  });
+
+  it("strips control characters", () => {
+    expect(sanitizeDisplayName("Mi\u0007a\u0000")).toBe("Mia");
+  });
+
+  it("treats blank input as no name", () => {
+    expect(sanitizeDisplayName("   ")).toBeNull();
+    expect(sanitizeDisplayName("\u0007")).toBeNull();
+    expect(sanitizeDisplayName(null)).toBeNull();
+    expect(sanitizeDisplayName(undefined)).toBeNull();
+  });
+
+  it("caps length at 40 without leaving a trailing space", () => {
+    const sanitized = sanitizeDisplayName(`${"a".repeat(39)} tail`);
+
+    expect(sanitized).toBe("a".repeat(39));
+  });
+
+  it("counts by code point so multi-byte characters are not split", () => {
+    const sanitized = sanitizeDisplayName("💀".repeat(50));
+
+    expect(Array.from(sanitized ?? "")).toHaveLength(40);
+  });
+});
+
+describe("mergeDisplayName", () => {
+  it("keeps and pushes a local name over a remote one", () => {
+    expect(mergeDisplayName("Mia", "Stale")).toEqual({
+      effective: "Mia",
+      pushLocal: true,
+    });
+  });
+
+  // Offline-clear regression: a tombstone must not be resurrected by the remote
+  // copy, and the clear has to be pushed on the next reconcile.
+  it("keeps an explicit clear and pushes it instead of adopting remote", () => {
+    expect(mergeDisplayName(null, "Ghost")).toEqual({
+      effective: null,
+      pushLocal: true,
+    });
+  });
+
+  it("adopts a remote name when this device never set one, without pushing", () => {
+    expect(mergeDisplayName(undefined, "Mia")).toEqual({
+      effective: "Mia",
+      pushLocal: false,
+    });
+  });
+
+  it("sanitizes an adopted remote name", () => {
+    expect(mergeDisplayName(undefined, "  Mia   Dugas ")).toEqual({
+      effective: "Mia Dugas",
+      pushLocal: false,
+    });
+  });
+
+  it("stays never-set when neither side has a name", () => {
+    expect(mergeDisplayName(undefined, null)).toEqual({
       effective: null,
       pushLocal: false,
     });

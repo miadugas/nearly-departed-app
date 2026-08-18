@@ -33,6 +33,46 @@ export function mergeFavorites(
   return { merged, toInsertLocally, toPushRemotely };
 }
 
+export type MergeDisplayNameResult = {
+  // The name that should be in effect locally after reconcile.
+  effective: string | null;
+  // Whether the caller should push the local value (name or clear) to Supabase.
+  pushLocal: boolean;
+};
+
+// The one place a display name is normalized — used on the way in (the editor,
+// i.e. user intent) and on the way out (remote values, written by some other
+// client). Strips control characters, collapses whitespace, caps length by code
+// point so accents/emoji can't be cut mid-character, blank counts as no name.
+export function sanitizeDisplayName(
+  raw: string | null | undefined,
+): string | null {
+  if (raw == null) return null;
+
+  const sanitized = raw
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+    .trim()
+    .replace(/\s+/g, " ");
+
+  if (!sanitized) return null;
+  // Re-trim after the cap: the slice can land just past a space.
+  return Array.from(sanitized).slice(0, 40).join("").trim() || null;
+}
+
+// Display-name reconcile preserves the distinction between never set
+// (undefined) and explicitly cleared (null), so an offline clear cannot be
+// resurrected by a later remote read.
+export function mergeDisplayName(
+  local: string | null | undefined,
+  remote: string | null,
+): MergeDisplayNameResult {
+  if (local !== undefined) {
+    return { effective: local, pushLocal: true };
+  }
+
+  return { effective: sanitizeDisplayName(remote), pushLocal: false };
+}
+
 export type MergeAvatarResult = {
   // The avatar id that should be in effect locally after reconcile.
   effective: AvatarId | null;

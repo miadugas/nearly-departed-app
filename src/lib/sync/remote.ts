@@ -7,7 +7,15 @@ import type { FavoriteSoul } from "@/lib/favorites/types";
 // the local repository stays network-free.
 
 type FavoriteRow = { soul: FavoriteSoul };
-type ProfileRow = { avatar_id: string | null };
+type ProfileRow = {
+  avatar_id: string | null;
+  display_name: string | null;
+};
+
+export type FetchProfileResult = {
+  avatarId: string | null;
+  displayName: string | null;
+};
 
 export async function fetchFavorites(userId: string): Promise<FavoriteSoul[]> {
   const { data, error } = await supabase
@@ -43,14 +51,18 @@ export async function removeFavorite(
   if (error) throw error;
 }
 
-export async function fetchAvatar(userId: string): Promise<string | null> {
+export async function fetchProfile(userId: string): Promise<FetchProfileResult> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("avatar_id")
+    .select("avatar_id, display_name")
     .eq("id", userId)
     .maybeSingle();
   if (error) throw error;
-  return (data as ProfileRow | null)?.avatar_id ?? null;
+  const profile = data as ProfileRow | null;
+  return {
+    avatarId: profile?.avatar_id ?? null,
+    displayName: profile?.display_name ?? null,
+  };
 }
 
 export async function upsertAvatar(
@@ -61,6 +73,25 @@ export async function upsertAvatar(
     .from("profiles")
     .upsert(
       { id: userId, avatar_id: avatarId, updated_at: new Date().toISOString() },
+      { onConflict: "id" },
+    );
+  if (error) throw error;
+}
+
+export async function upsertDisplayName(
+  userId: string,
+  displayName: string | null,
+): Promise<void> {
+  // PostgREST's default merge-duplicates behavior updates only the provided
+  // columns, so this single-field upsert cannot clobber avatar_id (or vice versa).
+  const { error } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        id: userId,
+        display_name: displayName,
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "id" },
     );
   if (error) throw error;
