@@ -65,7 +65,12 @@
     },
     "extra": {
       "supabaseUrl": "https://lazmmkvavwicxophadmt.supabase.co",
-      "supabaseAnonKey": "sb_publishable_eWRSXhYETPUedQCOaSVO9A_Y5QuvvIH"
-    }
+      "supabaseAnonKey": "sb_publishable_eWRSXhYETPUedQCOaSVO9A_Y5QuvvIH",
+      "router": {},
+      "eas": {
+        "projectId": "59f59a4a-99e3-4dea-8237-e4ae80b8ef58"
+      }
+    },
+    "owner": "miadugas"
   }
 }
