@@ -25,6 +25,11 @@ type Props = {
   selected: string | null;
   onSelectCemetery?: (title: string) => void;
   onRecenter?: () => void;
+  // sheet coupling: the locate button hugs the sheet's top edge — `controlBottom`
+  // seats it above the expanded sheet, `controlShift` slides it down in lockstep
+  // as the sheet collapses (same Animated.Value driving the sheet's translateY).
+  controlShift?: Animated.Value;
+  controlBottom?: number;
 };
 
 function MapButton({
@@ -68,6 +73,8 @@ export function SoulsMap({
   selected,
   onSelectCemetery,
   onRecenter,
+  controlShift,
+  controlBottom,
 }: Props) {
   const [lat, lon] = center;
   const cameraRef = useRef<any>(null);
@@ -250,9 +257,16 @@ export function SoulsMap({
       </MapLibreMap>
 
       {/* locate — zoom is pinch-to-zoom (no +/- buttons, mobile-map standard) */}
-      <View style={{ position: "absolute", right: 12, bottom: 40 }}>
+      <Animated.View
+        style={{
+          position: "absolute",
+          right: 12,
+          bottom: controlBottom ?? 40,
+          transform: controlShift ? [{ translateY: controlShift }] : undefined,
+        }}
+      >
         <MapButton name="navigation" onPress={recenter} />
-      </View>
+      </Animated.View>
     </View>
   );
 }

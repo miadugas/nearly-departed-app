@@ -1,5 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
-import { Text, View } from "react-native";
+import { Animated, Text, View } from "react-native";
 
 import type { CemeterySection } from "@/lib/wikidata";
 
@@ -13,6 +13,8 @@ type Props = {
   selected: string | null;
   onSelectCemetery?: (title: string) => void;
   onRecenter?: () => void;
+  controlShift?: Animated.Value;
+  controlBottom?: number;
 };
 
 export function SoulsMap({ sections }: Props) {

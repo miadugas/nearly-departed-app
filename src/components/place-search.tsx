@@ -11,7 +11,13 @@ import {
 
 import { searchPlaces, type Place } from "@/lib/geocode";
 
-export function PlaceSearch({ onPick }: { onPick: (place: Place) => void }) {
+export function PlaceSearch({
+  onPick,
+  onFocus,
+}: {
+  onPick: (place: Place) => void;
+  onFocus?: () => void;
+}) {
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
 
@@ -50,6 +56,7 @@ export function PlaceSearch({ onPick }: { onPick: (place: Place) => void }) {
           autoCorrect={false}
           autoCapitalize="words"
           returnKeyType="search"
+          onFocus={onFocus}
         />
         {q.length > 0 && (
           <Pressable onPress={() => setQ("")} hitSlop={10}>

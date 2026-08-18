@@ -1,5 +1,13 @@
 # TestFlight feedback — fixes for next build (v1.0.0 build 4+)
 
+## Next batch (post-build-4)
+
+| # | Issue | Source | Status |
+| --- | --- | --- | --- |
+| 4 | Discovery bottom sheet: results list is now collapsible — tap or fling the handle pill; header (search/radius/status) stays, map takes the freed space via one LayoutAnimation transition. Tapping a cemetery pin auto-expands. Simulator-verified both directions. | Mia, TF on device (build 4) 2026-08-18 | fixed (in working tree) |
+
+## Shipped in build 4 (v1.0.2)
+
 Collected during the pre-submission TestFlight pass. Each item gets fixed,
 batched into the next build, and re-uploaded before App Store submission.
 
