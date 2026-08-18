@@ -299,6 +299,10 @@ export default function Discover() {
                     <Pressable
                       key={r}
                       onPress={() => setRadius(r)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${r} kilometer radius`}
+                      accessibilityState={{ selected: active }}
+                      hitSlop={{ top: 8, bottom: 8 }}
                       className={`rounded-full border px-3.5 py-1.5 ${active ? "border-ink bg-ink" : "border-line"}`}
                     >
                       <Text

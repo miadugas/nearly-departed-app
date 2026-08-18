@@ -147,11 +147,25 @@ export function year(s: string) {
   return neg ? `${y} BC` : y;
 }
 
+// Wikidata items can carry several normal-rank birth/death claims with no
+// preferred rank chosen (e.g. Frances Drake: 1908 and 1912); the truthy query
+// then yields an arbitrary one per row and first-row-wins picks blind. The
+// human-curated description usually ends in "(1912–2000)" — the community's
+// accepted dates — so when that parses, it outranks the raw claim.
+const DESC_YEARS = /\((\d{3,4})\s*[–—-]\s*(\d{3,4})\)/;
+
+export function lifeYears(s: Pick<Soul, "desc" | "dob" | "dod">) {
+  const m = s.desc?.match(DESC_YEARS);
+  return {
+    born: m?.[1] ?? year(s.dob),
+    died: m?.[2] ?? year(s.dod),
+  };
+}
+
 export function lifespan(s: Soul) {
-  const a = year(s.dob);
-  const b = year(s.dod);
-  if (!a && !b) return "";
-  return `${a || "?"}–${b || "?"}`;
+  const { born, died } = lifeYears(s);
+  if (!born && !died) return "";
+  return `${born || "?"}–${died || "?"}`;
 }
 
 export function thumbUrl(image: string) {

@@ -46,7 +46,7 @@ export function PlaceSearch({
           value={q}
           onChangeText={setQ}
           placeholder="Search a place — city, cemetery…"
-          placeholderTextColor="rgba(255,255,255,0.38)"
+          placeholderTextColor="rgba(255,255,255,0.50)"
           className="text-ink flex-1"
           style={{
             fontFamily: "PlusJakartaSans_400Regular",

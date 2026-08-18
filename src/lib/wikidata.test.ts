@@ -4,6 +4,7 @@ import {
   groupByCemetery,
   heroUrl,
   lifespan,
+  lifeYears,
   thumbUrl,
   year,
   type Soul,
@@ -88,5 +89,29 @@ describe("groupByCemetery", () => {
 
   it("returns an empty array for no souls", () => {
     expect(groupByCemetery([])).toEqual([]);
+  });
+});
+
+describe("lifeYears", () => {
+  it("prefers years from the curated description over conflicting claims", () => {
+    // e.g. Frances Drake: two normal-rank P569 claims (1908, 1912); the
+    // description carries the community-accepted dates.
+    const s = soul({ desc: "American actress (1912–2000)", dob: "1908-01-01", dod: "2000-01-17" });
+    expect(lifeYears(s)).toEqual({ born: "1912", died: "2000" });
+  });
+
+  it("falls back to claim years when the description has none", () => {
+    const s = soul({ desc: "American actress", dob: "1908-01-01", dod: "2000-01-17" });
+    expect(lifeYears(s)).toEqual({ born: "1908", died: "2000" });
+  });
+
+  it("handles hyphen and em-dash separators", () => {
+    const s = soul({ desc: "Poet (1809-1849)", dob: "", dod: "" });
+    expect(lifeYears(s)).toEqual({ born: "1809", died: "1849" });
+  });
+
+  it("ignores non-year parentheticals", () => {
+    const s = soul({ desc: "Singer (of the band Heart)", dob: "1950-06-19", dod: "" });
+    expect(lifeYears(s)).toEqual({ born: "1950", died: "" });
   });
 });

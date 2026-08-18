@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton, IconButton } from "@/components/icon-button";
 import { useFavorites } from "@/lib/favorites/context";
-import { heroUrl, year, type Soul } from "@/lib/wikidata";
+import { heroUrl, lifeYears, type Soul } from "@/lib/wikidata";
 import { fetchSummary } from "@/lib/wikipedia";
 
 function Stat({
@@ -181,8 +181,8 @@ export default function PersonDetail() {
           {/* stat grid */}
           <View className="overflow-hidden rounded-3xl border border-line">
             <View className="flex-row border-b border-line">
-              <Stat label="Born" value={year(soul.dob) || "?"} />
-              <Stat label="Died" value={year(soul.dod) || "?"} noRight />
+              <Stat label="Born" value={lifeYears(soul).born || "?"} />
+              <Stat label="Died" value={lifeYears(soul).died || "?"} noRight />
             </View>
             <View className="flex-row">
               <Stat label="Resting at" value={soul.place} small />

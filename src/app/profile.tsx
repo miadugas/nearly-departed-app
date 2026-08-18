@@ -27,7 +27,7 @@ import { useAvatar } from "@/lib/avatar/context";
 import { useFavorites } from "@/lib/favorites/context";
 import type { FavoriteSoul } from "@/lib/favorites/types";
 import { sanitizeDisplayName } from "@/lib/sync/merge";
-import { thumbUrl, year } from "@/lib/wikidata";
+import { lifeYears, thumbUrl } from "@/lib/wikidata";
 
 function FavoriteRow({
   fav,
@@ -37,8 +37,7 @@ function FavoriteRow({
   onRemove: () => void;
 }) {
   const initial = (fav.label || "?").trim().charAt(0).toUpperCase();
-  const a = year(fav.dob);
-  const b = year(fav.dod);
+  const { born: a, died: b } = lifeYears(fav);
   const years = a || b ? `${a || "?"}–${b || "?"}` : "";
 
   return (

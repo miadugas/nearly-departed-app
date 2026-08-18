@@ -12,7 +12,9 @@ module.exports = {
         ink: {
           DEFAULT: "#ffffff",
           dim: "rgba(255,255,255,0.60)",
-          faint: "rgba(255,255,255,0.38)",
+          // 0.50 = 5.3:1 on bg — the darkest white-alpha that clears WCAG AA
+          // (4.5:1) for the 11pt labels this token styles; 0.38 measured 3.4:1
+          faint: "rgba(255,255,255,0.50)",
         },
         glass: "rgba(255,255,255,0.08)",
         line: "rgba(255,255,255,0.14)",
