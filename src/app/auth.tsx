@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/icon-button";
 import { useAuth } from "@/lib/auth/context";
+import { friendlyAuthMessage } from "@/lib/auth/messages";
 
 // Two real options: Sign in with Apple (native) and passwordless email code,
 // both through Supabase. No Google — it would force Apple anyway (App Store
@@ -145,7 +146,13 @@ export default function Auth() {
         "code" in e &&
         e.code === "ERR_REQUEST_CANCELED";
       if (!canceled) {
-        setError(e instanceof Error ? e.message : "Apple sign-in failed.");
+        if (__DEV__) console.warn("[auth] Apple sign-in failed", e);
+        setError(
+          friendlyAuthMessage(e, {
+            policy: "fixed",
+            fallback: "Apple sign-in failed.",
+          }),
+        );
       }
     } finally {
       setBusy(false);
@@ -160,7 +167,14 @@ export default function Auth() {
       setCode("");
       setMode("code");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't send the code.");
+      if (__DEV__) console.warn("[auth] Send-code failed", e);
+      setError(
+        friendlyAuthMessage(e, {
+          policy: "fixed",
+          fallback:
+            "Couldn't send the code. Try again in a minute — or use Sign in with Apple.",
+        }),
+      );
     } finally {
       setBusy(false);
     }
@@ -174,7 +188,13 @@ export default function Auth() {
       // onAuthStateChange persists the session; drop the user into the app.
       router.replace({ pathname: "/explore", params: { locate: "0" } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "That code didn't work.");
+      if (__DEV__) console.warn("[auth] Code verification failed", e);
+      setError(
+        friendlyAuthMessage(e, {
+          policy: "allowlist",
+          fallback: "That code didn't work.",
+        }),
+      );
     } finally {
       setBusy(false);
     }

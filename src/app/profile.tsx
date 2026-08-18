@@ -8,11 +8,14 @@ import { type ComponentProps, type ReactNode, useState } from "react";
 import {
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,6 +26,7 @@ import { AVATARS, avatarSource, type AvatarId } from "@/lib/avatar/avatars";
 import { useAvatar } from "@/lib/avatar/context";
 import { useFavorites } from "@/lib/favorites/context";
 import type { FavoriteSoul } from "@/lib/favorites/types";
+import { sanitizeDisplayName } from "@/lib/sync/merge";
 import { thumbUrl, year } from "@/lib/wikidata";
 
 function FavoriteRow({
@@ -235,6 +239,127 @@ function AvatarPickerModal({
   );
 }
 
+// Bottom-sheet display-name editor — keyboard avoidance keeps both intent
+// actions reachable while the focused field is open.
+function NameEditorModal({
+  visible,
+  name,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  name: string | null;
+  onClose: () => void;
+  onSave: (name: string | null) => void;
+}) {
+  const [draft, setDraft] = useState(name ?? "");
+
+  const handleSave = () => {
+    onSave(sanitizeDisplayName(draft));
+    onClose();
+  };
+
+  const handleClear = () => {
+    onSave(null);
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={{ flex: 1, justifyContent: "flex-end" }}>
+        <Pressable
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close display name editor"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.6)",
+          }}
+        />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <SafeAreaView
+            edges={["bottom"]}
+            className="bg-bg border-t border-line"
+            style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+          >
+            <Text
+              className="text-ink-faint px-5 pb-3 pt-5"
+              style={{
+                fontFamily: "PlusJakartaSans_600SemiBold",
+                fontSize: 11,
+                letterSpacing: 1.6,
+                textTransform: "uppercase",
+              }}
+            >
+              What should we call you?
+            </Text>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              autoFocus={visible}
+              maxLength={40}
+              returnKeyType="done"
+              onSubmitEditing={handleSave}
+              placeholder="Your display name"
+              placeholderTextColor="rgba(255,255,255,0.4)"
+              className="mx-5 h-[54px] rounded-full px-5"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.10)",
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.26)",
+                color: "#fff",
+                fontFamily: "PlusJakartaSans_400Regular",
+                fontSize: 16,
+              }}
+            />
+            <View className="flex-row gap-3 px-5 pb-5 pt-4">
+              <Pressable
+                onPress={handleClear}
+                accessibilityRole="button"
+                accessibilityLabel="Clear display name"
+                className="h-[50px] flex-1 items-center justify-center rounded-full active:opacity-70"
+                style={{
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.26)",
+                }}
+              >
+                <Text className="font-sans-semibold text-ink" style={{ fontSize: 15 }}>
+                  Clear
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSave}
+                accessibilityRole="button"
+                accessibilityLabel="Save display name"
+                className="h-[50px] flex-1 items-center justify-center rounded-full active:opacity-80"
+                style={{ backgroundColor: "#fff" }}
+              >
+                <Text
+                  className="font-sans-semibold"
+                  style={{ color: "#0a0a0a", fontSize: 15 }}
+                >
+                  Save
+                </Text>
+              </Pressable>
+            </View>
+          </SafeAreaView>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
 const APP_VERSION = Constants.expoConfig?.version ?? "1.0.0";
 
 // Settings/about row — icon, label, chevron. Matches the app's list idiom
@@ -265,13 +390,17 @@ function LinkRow({
 export default function Profile() {
   const { favorites, remove, isReady } = useFavorites();
   const { user, signOut, deleteAccount } = useAuth();
-  const { avatarId, setAvatarId } = useAvatar();
+  const { avatarId, setAvatarId, displayName, setDisplayName } = useAvatar();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [nameEditorOpen, setNameEditorOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const signedIn = !!user;
   const email = user?.email ?? "";
-  const avatarInitial = (email || "?").trim().charAt(0).toUpperCase();
+  const avatarInitial = (displayName ?? (email || "?"))
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -389,13 +518,29 @@ export default function Profile() {
                     <Feather name="edit-2" size={12} color="#fff" />
                   </View>
                 </Pressable>
-                <Text
-                  className="text-ink font-display mt-4"
-                  style={{ fontSize: 24, letterSpacing: -0.5 }}
-                  numberOfLines={1}
+                <Pressable
+                  onPress={() => setNameEditorOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit display name"
+                  className="mt-4 items-center"
                 >
-                  {signedIn ? email : "Guest"}
-                </Text>
+                  <Text
+                    className="text-ink font-display"
+                    style={{ fontSize: 24, letterSpacing: -0.5 }}
+                    numberOfLines={1}
+                  >
+                    {displayName ?? (signedIn ? email : "Guest")}
+                  </Text>
+                  {signedIn && displayName ? (
+                    <Text
+                      className="text-ink-dim font-sans mt-1 text-center"
+                      style={{ fontSize: 13, lineHeight: 18 }}
+                      numberOfLines={1}
+                    >
+                      {email}
+                    </Text>
+                  ) : null}
+                </Pressable>
                 <Text
                   className="text-ink-dim font-sans mt-1 text-center"
                   style={{ fontSize: 13, lineHeight: 18 }}
@@ -574,6 +719,13 @@ export default function Profile() {
           setAvatarId(id);
           setPickerOpen(false);
         }}
+      />
+      <NameEditorModal
+        key={`${nameEditorOpen}:${displayName ?? ""}`}
+        visible={nameEditorOpen}
+        name={displayName}
+        onClose={() => setNameEditorOpen(false)}
+        onSave={setDisplayName}
       />
     </View>
   );
