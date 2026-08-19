@@ -15,6 +15,7 @@ type Props = {
   onRecenter?: () => void;
   controlShift?: Animated.Value;
   controlBottom?: number;
+  viewPadding?: number;
 };
 
 export function SoulsMap({ sections }: Props) {

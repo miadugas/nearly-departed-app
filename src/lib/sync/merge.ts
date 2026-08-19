@@ -18,9 +18,15 @@ export type MergeFavoritesResult = {
 // resurrected by a remote copy (accepted v1 semantics). Local wins on payload
 // conflict so a device's freshest snapshot is never clobbered by a stale mirror.
 export function mergeFavorites(
-  local: FavoriteSoul[],
-  remote: FavoriteSoul[],
+  localIn: FavoriteSoul[] | null | undefined,
+  remoteIn: FavoriteSoul[] | null | undefined,
 ): MergeFavoritesResult {
+  // Reconcile runs in async microtasks where a throw is a fatal crash in
+  // Release — tolerate null-ish snapshots and rows instead of trusting callers.
+  const local = (localIn ?? []).filter((f) => !!f && typeof f.qid === "string");
+  const remote = (remoteIn ?? []).filter(
+    (f) => !!f && typeof f.qid === "string",
+  );
   const localByQid = new Map(local.map((f) => [f.qid, f]));
   const remoteByQid = new Map(remote.map((f) => [f.qid, f]));
 
@@ -47,7 +53,9 @@ export type MergeDisplayNameResult = {
 export function sanitizeDisplayName(
   raw: string | null | undefined,
 ): string | null {
-  if (raw == null) return null;
+  // Remote values cross a type boundary (Postgres → JSON → here); a non-string
+  // must degrade to "no name", never throw in the reconcile microtask.
+  if (typeof raw !== "string") return null;
 
   const sanitized = raw
     .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")

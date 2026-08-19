@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Keyboard,
   Pressable,
   Text,
   TextInput,
@@ -82,6 +83,7 @@ export function PlaceSearch({
               <Pressable
                 key={`${p.lat},${p.lon},${i}`}
                 onPress={() => {
+                  Keyboard.dismiss(); // picking navigates the map — typing is done
                   onPick(p);
                   setQ("");
                 }}

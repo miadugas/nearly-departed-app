@@ -156,6 +156,7 @@ export default function Discover() {
           onRecenter={() => setFocused(null)}
           controlShift={shift}
           controlBottom={sheetH + 16}
+          viewPadding={sheetH - 24}
         />
         <LinearGradient
           colors={[

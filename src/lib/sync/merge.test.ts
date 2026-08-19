@@ -212,3 +212,30 @@ describe("mergeDisplayName", () => {
     });
   });
 });
+
+// Fatal-crash hardening (2026-08-18 TestFlight SIGABRT): reconcile runs in
+// async microtasks where any throw kills the app in Release. These lock in
+// the "degrade, never throw" contract for malformed inputs.
+describe("merge hardening", () => {
+  it("mergeFavorites tolerates null/undefined snapshots", () => {
+    expect(() => mergeFavorites(null as never, undefined as never)).not.toThrow();
+    const r = mergeFavorites(null as never, undefined as never);
+    expect(r.merged).toEqual([]);
+  });
+
+  it("mergeFavorites drops rows without a qid instead of throwing", () => {
+    const good = fav("Q1");
+    const r = mergeFavorites(
+      [good],
+      [null, {}, fav("Q2")] as never,
+    );
+    expect(r.merged.map((f) => f.qid)).toEqual(["Q1", "Q2"]);
+    expect(r.toInsertLocally.map((f) => f.qid)).toEqual(["Q2"]);
+  });
+
+  it("sanitizeDisplayName returns null for non-string runtime values", () => {
+    expect(sanitizeDisplayName(42 as never)).toBeNull();
+    expect(sanitizeDisplayName({} as never)).toBeNull();
+    expect(sanitizeDisplayName([] as never)).toBeNull();
+  });
+});

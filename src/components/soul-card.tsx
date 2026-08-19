@@ -57,7 +57,7 @@ export function SoulCard({ soul }: { soul: Soul }) {
           {soul.desc || "—"}
         </Text>
 
-        {soul.occs.length > 0 && (
+        {(soul.occs ?? []).length > 0 && (
           <View className="mt-2 flex-row flex-wrap gap-1.5">
             {soul.occs.slice(0, 3).map((o) => (
               <View

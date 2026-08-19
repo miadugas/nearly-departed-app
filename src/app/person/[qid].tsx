@@ -69,7 +69,20 @@ function Stat({
 
 export default function PersonDetail() {
   const { data } = useLocalSearchParams<{ data: string }>();
-  const soul: Soul | null = data ? JSON.parse(data) : null;
+  // Param data crosses process/serialization boundaries (deep links, restored
+  // navigation state, remote-synced favorites) — a malformed payload must fall
+  // back to the empty screen, not throw during render (fatal in Release).
+  let soul: Soul | null = null;
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed.qid === "string") {
+        soul = { ...parsed, occs: Array.isArray(parsed.occs) ? parsed.occs : [] };
+      }
+    } catch {
+      soul = null;
+    }
+  }
   const [expanded, setExpanded] = useState(false);
   const { isFavorite, toggle } = useFavorites();
   const saved = soul ? isFavorite(soul.qid) : false;

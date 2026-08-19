@@ -23,7 +23,12 @@ export async function fetchFavorites(userId: string): Promise<FavoriteSoul[]> {
     .select("soul")
     .eq("user_id", userId);
   if (error) throw error;
-  return ((data ?? []) as FavoriteRow[]).map((row) => row.soul);
+  // The jsonb payload is written by whatever client version synced it — drop
+  // rows without a qid and normalize array fields rather than trusting shape.
+  return ((data ?? []) as FavoriteRow[])
+    .map((row) => row.soul)
+    .filter((s): s is FavoriteSoul => !!s && typeof s.qid === "string")
+    .map((s) => ({ ...s, occs: Array.isArray(s.occs) ? s.occs : [] }));
 }
 
 export async function pushFavorite(

@@ -30,6 +30,9 @@ type Props = {
   // as the sheet collapses (same Animated.Value driving the sheet's translateY).
   controlShift?: Animated.Value;
   controlBottom?: number;
+  // camera bottom inset in points — the sheet covers the lower screen, so camera
+  // targets center in the visible band above it instead of behind the sheet
+  viewPadding?: number;
 };
 
 function MapButton({
@@ -75,6 +78,7 @@ export function SoulsMap({
   onRecenter,
   controlShift,
   controlBottom,
+  viewPadding,
 }: Props) {
   const [lat, lon] = center;
   const cameraRef = useRef<any>(null);
@@ -135,6 +139,7 @@ export function SoulsMap({
           ref={cameraRef}
           center={view.center as [number, number]}
           zoom={view.zoom}
+          padding={{ bottom: viewPadding ?? 0 }}
           duration={600}
           easing="ease"
         />
