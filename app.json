@@ -57,7 +57,8 @@
           "locationAlwaysPermission": "Nearly Departed uses your location to find the notable dead buried near you.",
           "motionUsagePermission": "Motion activity helps the system improve location accuracy while you explore."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

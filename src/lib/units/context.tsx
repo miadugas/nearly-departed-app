@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { NativeModules, Platform } from "react-native";
+import { getLocales } from "expo-localization";
 
 import { isDistanceUnit, type DistanceUnit } from "./format";
 
@@ -17,14 +17,19 @@ const KEY = "nd:distance-unit";
 // Device-level preference, like the OS's own region setting — deliberately not
 // synced to the account, since it follows the phone rather than the person.
 function deviceDefault(): DistanceUnit {
-  const locale =
-    Platform.OS === "ios"
-      ? (NativeModules.SettingsManager?.settings?.AppleLocale ??
-        NativeModules.SettingsManager?.settings?.AppleLanguages?.[0] ??
-        "")
-      : (NativeModules.I18nManager?.localeIdentifier ?? "");
-  // The three holdouts that measure road distance in miles.
-  return /[-_](US|GB|MM|LR)\b/i.test(String(locale)) ? "mi" : "km";
+  try {
+    const locale = getLocales()[0];
+    // measurementSystem is the OS's own answer: "us" | "uk" | "metric".
+    // Both us and uk post road distances in miles.
+    if (locale?.measurementSystem === "us" || locale?.measurementSystem === "uk") {
+      return "mi";
+    }
+    if (locale?.measurementSystem === "metric") return "km";
+    // No measurement system reported — fall back to the region's convention.
+    return /^(US|GB|MM|LR)$/i.test(locale?.regionCode ?? "") ? "mi" : "km";
+  } catch {
+    return "km";
+  }
 }
 
 type UnitsContextValue = {
