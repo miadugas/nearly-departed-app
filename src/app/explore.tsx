@@ -118,7 +118,7 @@ export default function Discover() {
       drag.collapsed = next;
       Animated.spring(shift, {
         toValue: next ? drag.max : 0,
-        useNativeDriver: false, // hit-testing must follow the transform
+        useNativeDriver: true,
         speed: 16,
         bounciness: 4,
       }).start();
@@ -177,7 +177,7 @@ export default function Discover() {
       drag.collapsed = next;
       Animated.spring(shift, {
         toValue: next ? drag.max : 0,
-        useNativeDriver: false, // hit-testing must follow the transform
+        useNativeDriver: true,
         velocity: drag.velocity,
         speed: 16,
         bounciness: 4,
