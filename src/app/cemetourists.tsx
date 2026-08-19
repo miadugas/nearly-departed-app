@@ -91,14 +91,16 @@ export default function Cemetourists() {
           showsVerticalScrollIndicator={false}
         >
           <Text
-            className="text-ink font-display"
-            style={{ fontSize: 28, letterSpacing: -0.5 }}
+            className="text-ink font-display text-center"
+            style={{ fontSize: 30, letterSpacing: -0.5 }}
+            numberOfLines={1}
+            adjustsFontSizeToFit
           >
             Cemetourists
           </Text>
           <Text
-            className="text-ink-dim font-sans mt-1"
-            style={{ fontSize: 14, lineHeight: 20 }}
+            className="text-ink-dim font-sans mt-2 text-center"
+            style={{ fontSize: 12.5 }}
           >
             The do&apos;s &amp; don&apos;ts of visiting well.
           </Text>

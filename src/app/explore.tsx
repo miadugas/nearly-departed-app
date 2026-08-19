@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Keyboard,
   PanResponder,
   Pressable,
   SectionList,
@@ -86,6 +87,9 @@ export default function Discover() {
 
   const settle = useMemo(
     () => (next: boolean) => {
+      // collapsing means typing is over; expanding may BE the focus path —
+      // dismissing there would kill the keyboard the moment search opens it
+      if (next) Keyboard.dismiss();
       drag.collapsed = next;
       Animated.spring(shift, {
         toValue: next ? drag.max : 0,
@@ -109,6 +113,7 @@ export default function Discover() {
         onMoveShouldSetPanResponder: (_e, g) =>
           Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx),
         onPanResponderMove: (_e, g) => {
+          Keyboard.dismiss();
           const base = drag.collapsed ? drag.max : 0;
           const next = Math.min(drag.max, Math.max(0, base + g.dy));
           shift.setValue(next);
@@ -156,7 +161,7 @@ export default function Discover() {
           onRecenter={() => setFocused(null)}
           controlShift={shift}
           controlBottom={sheetH + 16}
-          viewPadding={sheetH - 24}
+          viewPadding={collapsed ? headerH + insets.bottom : sheetH - 24}
         />
         <LinearGradient
           colors={[
@@ -299,7 +304,10 @@ export default function Discover() {
                   return (
                     <Pressable
                       key={r}
-                      onPress={() => setRadius(r)}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setRadius(r);
+                      }}
                       accessibilityRole="button"
                       accessibilityLabel={`${r} kilometer radius`}
                       accessibilityState={{ selected: active }}

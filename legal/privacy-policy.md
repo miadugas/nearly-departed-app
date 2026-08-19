@@ -10,13 +10,13 @@ This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") han
 - We do **not** require an account to use the App.
 - We do **not** run analytics or advertising SDKs, and we do **not** sell your data.
 - An account is **optional**. If you create one to sign in, your email address is stored by our authentication provider (Supabase). Otherwise we operate no servers that store your personal data — the App talks directly to a small number of public third-party services to fetch maps and burial records.
-- Your **location** is used to find notable burials near you, and the coordinates are sent to those public services _as part of a query_ to retrieve results.
+- Your **location** is used to find notable burials near you, and the coordinates are sent to those public services **as part of a query** to retrieve results.
 - Guest favorites and display names are stored only on your device. If you sign in, your favorites, chosen avatar id, and chosen display name are also synced to your Supabase account.
 
 ## Information we collect and how it's used
 
 **1. Location data.**
-If you tap "Use my location," the App requests permission to access your device's location _while you are using the App_ (`When In Use`). Your approximate coordinates are used to:
+If you tap "Use my location," the App requests permission to access your device's location **while you are using the App** ("When In Use"). Your approximate coordinates are used to:
 
 - center the map, and
 - query public databases for notable people buried near that point.
@@ -27,7 +27,7 @@ To do that, your coordinates are transmitted to the third-party services listed 
 When you use "search anywhere," the text you type (e.g. a city or cemetery name) is sent to our geocoding provider (Komoot/Photon) to convert it into coordinates. We do not store these searches.
 
 **3. Technical information inherent to internet requests.**
-When the App contacts a third-party service, that service automatically receives standard network information such as your **IP address** and device/user-agent details, governed by _that service's_ privacy policy (linked below). We do not receive or retain this information.
+When the App contacts a third-party service, that service automatically receives standard network information such as your **IP address** and device/user-agent details, governed by **that service's** privacy policy (linked below). We do not receive or retain this information.
 
 **4. Favorites and on-device data.**
 For guests, any graves you save and any display name you choose are stored locally on your device using the operating system's storage. If you sign in, your favorites, chosen avatar id, and chosen display name are also synced to Supabase, scoped to your account, and deleted when you delete the account. Guest favorites and display names are removed if you delete the App.

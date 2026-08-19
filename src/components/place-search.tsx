@@ -57,10 +57,17 @@ export function PlaceSearch({
           autoCorrect={false}
           autoCapitalize="words"
           returnKeyType="search"
+          onSubmitEditing={() => Keyboard.dismiss()}
           onFocus={onFocus}
         />
         {q.length > 0 && (
-          <Pressable onPress={() => setQ("")} hitSlop={10}>
+          <Pressable
+            onPress={() => {
+              Keyboard.dismiss();
+              setQ("");
+            }}
+            hitSlop={10}
+          >
             <Feather name="x" size={16} color="rgba(255,255,255,0.5)" />
           </Pressable>
         )}

@@ -85,8 +85,12 @@ export function SoulsMap({
   // Memoized camera target — a stable reference so the Camera only re-animates
   // when the focus point actually changes, not on every parent re-render.
   const view = useMemo(
-    () => ({ center: [lon, lat] as [number, number], zoom }),
-    [lat, lon, zoom],
+    () => ({
+      center: [lon, lat] as [number, number],
+      zoom,
+      padding: { bottom: viewPadding ?? 0 },
+    }),
+    [lat, lon, zoom, viewPadding],
   );
 
   // pulsing "you" ring
@@ -139,7 +143,7 @@ export function SoulsMap({
           ref={cameraRef}
           center={view.center as [number, number]}
           zoom={view.zoom}
-          padding={{ bottom: viewPadding ?? 0 }}
+          padding={view.padding}
           duration={600}
           easing="ease"
         />
