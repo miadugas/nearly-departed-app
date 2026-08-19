@@ -2,13 +2,13 @@ import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   Easing,
+  type GestureResponderEvent,
   Keyboard,
-  PanResponder,
   Pressable,
   SectionList,
   StyleSheet,
@@ -30,17 +30,29 @@ import { SoulsMap } from "@/components/souls-map";
 import { useDeviceLocation } from "@/hooks/use-device-location";
 import { useNearbySouls } from "@/hooks/use-nearby-souls";
 import type { Place } from "@/lib/geocode";
+import { useUnits } from "@/lib/units/context";
+import {
+  RADIUS_CHOICES,
+  formatDistance,
+  formatRadius,
+  radiusToKm,
+} from "@/lib/units/format";
 import { groupByCemetery } from "@/lib/wikidata";
 
-const RADII = [10, 25, 50, 150];
 const zoomFor = (r: number) =>
   r <= 10 ? 12 : r <= 25 ? 10.5 : r <= 50 ? 9.5 : 8;
 
 export default function Discover() {
   const { user } = useAuth();
+  const { unit } = useUnits();
   const { locate } = useLocalSearchParams<{ locate?: string }>();
   const loc = useDeviceLocation(locate !== "0");
-  const [radius, setRadius] = useState(25);
+  // The chosen radius is a slot, not a number, so switching units keeps the
+  // same rung of the ladder (25 km ↔ 15 mi) without any state juggling.
+  const RADII = RADIUS_CHOICES[unit];
+  const [radiusSlot, setRadiusSlot] = useState(1);
+  const radius = RADII[radiusSlot] ?? RADII[1];
+  const radiusKm = radiusToKm(radius, unit);
 
   // "search anywhere" — a picked place overrides the device location for the query
   const [place, setPlace] = useState<Place | null>(null);
@@ -51,7 +63,7 @@ export default function Discover() {
     data: souls,
     isLoading,
     isError,
-  } = useNearbySouls(activeLat, activeLon, radius);
+  } = useNearbySouls(activeLat, activeLon, radiusKm);
   const sections = useMemo(() => groupByCemetery(souls ?? []), [souls]);
   const total = souls?.length ?? 0;
   const placeLabel = place
@@ -82,15 +94,23 @@ export default function Discover() {
   const [collapsed, setCollapsed] = useState(false);
   const shift = useMemo(() => new Animated.Value(0), []);
   // mutable context for gesture callbacks — never read during render
-  const dragRef = useRef({ collapsed: false, max: 0 });
+  const dragRef = useRef({
+    collapsed: false,
+    max: 0,
+    startY: 0,
+    lastY: 0,
+    lastT: 0,
+    velocity: 0,
+    moved: false,
+  });
   useEffect(() => {
     dragRef.current.max = dragMax;
     // header height changed while collapsed (e.g. walk-up header) — re-seat
     if (dragRef.current.collapsed) shift.setValue(dragMax);
   }, [dragMax, shift]);
 
-  const settle = useMemo(
-    () => (next: boolean) => {
+  const settle = useCallback(
+    (next: boolean) => {
       // collapsing means typing is over; expanding may BE the focus path —
       // dismissing there would kill the keyboard the moment search opens it
       if (next) Keyboard.dismiss();
@@ -107,41 +127,64 @@ export default function Discover() {
     [shift],
   );
 
-  const handlePan = useMemo(
-    () =>
-      PanResponder.create({
-        // capture-phase: the pill is a Pressable (its own responder), so the
-        // wrapper must seize the gesture once real vertical motion starts —
-        // taps stay with the Pressable, drags come here.
-        onMoveShouldSetPanResponderCapture: (_e, g) =>
-          Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx),
-        onMoveShouldSetPanResponder: (_e, g) =>
-          Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx),
-        onPanResponderMove: (_e, g) => {
-          Keyboard.dismiss();
-          const drag = dragRef.current;
-          const base = drag.collapsed ? drag.max : 0;
-          const next = Math.min(drag.max, Math.max(0, base + g.dy));
-          shift.setValue(next);
-        },
-        onPanResponderRelease: (_e, g) => {
-          const drag = dragRef.current;
-          const base = drag.collapsed ? drag.max : 0;
-          const pos = Math.min(drag.max, Math.max(0, base + g.dy));
-          const next =
-            g.vy > 0.3 ? true : g.vy < -0.3 ? false : pos > drag.max / 2;
-          Animated.spring(shift, {
-            toValue: next ? drag.max : 0,
-            useNativeDriver: false, // hit-testing must follow the transform
-            velocity: g.vy,
-            speed: 16,
-            bounciness: 4,
-          }).start();
-          drag.collapsed = next;
-          setCollapsed(next);
-        },
-      }),
+  // Raw responder props rather than PanResponder.create(): the latter is called
+  // during render and closes over the gesture ref, which the React Compiler
+  // rejects ("cannot access refs during render"). These callbacks only ever run
+  // at event time, so the ref reads are safe and the lint rule is satisfied.
+  const onTouchStart = useCallback((e: GestureResponderEvent) => {
+    const drag = dragRef.current;
+    drag.startY = e.nativeEvent.pageY;
+    drag.lastY = drag.startY;
+    drag.lastT = e.nativeEvent.timestamp;
+    drag.velocity = 0;
+    drag.moved = false;
+  }, []);
+
+  const onTouchMove = useCallback(
+    (e: GestureResponderEvent) => {
+      const drag = dragRef.current;
+      const { pageY, timestamp } = e.nativeEvent;
+      const dy = pageY - drag.startY;
+      if (!drag.moved && Math.abs(dy) <= 6) return;
+      drag.moved = true;
+      Keyboard.dismiss();
+      const dt = timestamp - drag.lastT;
+      if (dt > 0) drag.velocity = (pageY - drag.lastY) / dt;
+      drag.lastY = pageY;
+      drag.lastT = timestamp;
+      const base = drag.collapsed ? drag.max : 0;
+      shift.setValue(Math.min(drag.max, Math.max(0, base + dy)));
+    },
     [shift],
+  );
+
+  const onTouchEnd = useCallback(
+    (e: GestureResponderEvent) => {
+      const drag = dragRef.current;
+      if (!drag.moved) {
+        settle(!drag.collapsed); // a tap, not a drag
+        return;
+      }
+      const dy = e.nativeEvent.pageY - drag.startY;
+      const base = drag.collapsed ? drag.max : 0;
+      const pos = Math.min(drag.max, Math.max(0, base + dy));
+      const next =
+        drag.velocity > 0.3
+          ? true
+          : drag.velocity < -0.3
+            ? false
+            : pos > drag.max / 2;
+      drag.collapsed = next;
+      Animated.spring(shift, {
+        toValue: next ? drag.max : 0,
+        useNativeDriver: false, // hit-testing must follow the transform
+        velocity: drag.velocity,
+        speed: 16,
+        bounciness: 4,
+      }).start();
+      setCollapsed(next);
+    },
+    [settle, shift],
   );
 
   // recenter is declarative: bumping the nonce nudges the camera center by
@@ -186,7 +229,7 @@ export default function Discover() {
   const mapCenter: [number, number] = focusedSection?.coord
     ? focusedSection.coord
     : [activeLat + homeNonce * 1e-7, activeLon];
-  const mapZoom = focusedSection ? 14 : zoomFor(radius);
+  const mapZoom = focusedSection ? 14 : zoomFor(radiusKm);
 
   return (
     <View className="bg-bg flex-1">
@@ -251,9 +294,16 @@ export default function Discover() {
       >
         <View onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}>
           {/* drag strip — full-width so the sheet is grabbable, not just the pill */}
-          <View {...handlePan.panHandlers}>
-            <Pressable
-              onPress={() => settle(!collapsed)}
+          <View
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderGrant={onTouchStart}
+            onResponderMove={onTouchMove}
+            onResponderRelease={onTouchEnd}
+            onResponderTerminate={onTouchEnd}
+          >
+            <View
+              accessible
               accessibilityRole="button"
               accessibilityLabel={
                 collapsed ? "Expand results list" : "Collapse results list"
@@ -269,7 +319,7 @@ export default function Discover() {
                 className="h-1 w-10 self-center rounded-full"
                 style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
               />
-            </Pressable>
+            </View>
           </View>
 
           {focusedSection ? (
@@ -306,7 +356,7 @@ export default function Discover() {
               >
                 {focusedSection.data.length}{" "}
                 {focusedSection.data.length === 1 ? "soul" : "souls"} rest here
-                · {focusedSection.dist.toFixed(1)} km away
+                · {formatDistance(focusedSection.dist, unit)} away
               </Text>
             </View>
           ) : (
@@ -383,17 +433,17 @@ export default function Discover() {
                     }}
                   />
                 </Pressable>
-                {RADII.map((r) => {
-                  const active = r === radius;
+                {RADII.map((r, slot) => {
+                  const active = slot === radiusSlot;
                   return (
                     <Pressable
                       key={r}
                       onPress={() => {
                         Keyboard.dismiss();
-                        setRadius(r);
+                        setRadiusSlot(slot);
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`${r} kilometer radius`}
+                      accessibilityLabel={`${r} ${unit === "mi" ? "mile" : "kilometer"} radius`}
                       accessibilityState={{ selected: active }}
                       hitSlop={{ top: 8, bottom: 8 }}
                       className="items-center justify-center rounded-full"
@@ -414,7 +464,7 @@ export default function Discover() {
                           color: active ? "#0a0a0a" : "rgba(255,255,255,0.7)",
                         }}
                       >
-                        {r} km
+                        {formatRadius(r, unit)}
                       </Text>
                     </Pressable>
                   );
@@ -431,7 +481,7 @@ export default function Discover() {
                       ? "Consulting the records…"
                       : isError
                         ? "Query failed — pick a radius to retry."
-                        : `${total} notable souls within ${radius} km · ${placeLabel}`}
+                        : `${total} notable souls within ${formatRadius(radius, unit)} · ${placeLabel}`}
                 </Text>
                 <Pressable
                   onPress={() => settle(!collapsed)}
@@ -502,7 +552,7 @@ export default function Discover() {
                         textTransform: "uppercase",
                       }}
                     >
-                      {section.title} · {section.dist.toFixed(1)} km
+                      {section.title} · {formatDistance(section.dist, unit)}
                     </Text>
                     <Text
                       className="text-ink-faint"

@@ -25,6 +25,7 @@ import { useAuth } from "@/lib/auth/context";
 import { AVATARS, avatarSource, type AvatarId } from "@/lib/avatar/avatars";
 import { useAvatar } from "@/lib/avatar/context";
 import { useFavorites } from "@/lib/favorites/context";
+import { useUnits } from "@/lib/units/context";
 import type { FavoriteSoul } from "@/lib/favorites/types";
 import { sanitizeDisplayName } from "@/lib/sync/merge";
 import { lifeYears, thumbUrl } from "@/lib/wikidata";
@@ -387,6 +388,7 @@ function LinkRow({
 }
 
 export default function Profile() {
+  const { unit, setUnit } = useUnits();
   const { favorites, remove, isReady } = useFavorites();
   const { user, signOut, deleteAccount } = useAuth();
   const { avatarId, setAvatarId, displayName, setDisplayName } = useAvatar();
@@ -660,6 +662,75 @@ export default function Profile() {
           }
           ListFooterComponent={
             <View>
+              {/* settings — device preferences, not account data */}
+              <Text
+                className="text-ink-faint px-5 pb-2 pt-8"
+                style={{
+                  fontFamily: "PlusJakartaSans_600SemiBold",
+                  fontSize: 11,
+                  letterSpacing: 1.6,
+                  textTransform: "uppercase",
+                }}
+              >
+                Settings
+              </Text>
+              <View className="flex-row items-center gap-3 border-y border-line px-5 py-3.5">
+                <Feather
+                  name="map-pin"
+                  size={17}
+                  color="rgba(255,255,255,0.55)"
+                />
+                <Text
+                  className="text-ink font-sans flex-1"
+                  style={{ fontSize: 15 }}
+                >
+                  Distances
+                </Text>
+                <View
+                  className="flex-row rounded-full"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.40)",
+                    backgroundColor: "rgba(255,255,255,0.14)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {(["km", "mi"] as const).map((option) => {
+                    const active = unit === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setUnit(option)}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={
+                          option === "km" ? "Kilometres" : "Miles"
+                        }
+                        hitSlop={{ top: 8, bottom: 8 }}
+                        className="items-center justify-center"
+                        style={{
+                          minWidth: 52,
+                          height: 32,
+                          backgroundColor: active ? "#ffffff" : "transparent",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "PlusJakartaSans_600SemiBold",
+                            fontSize: 13,
+                            color: active
+                              ? "#0a0a0a"
+                              : "rgba(255,255,255,0.7)",
+                          }}
+                        >
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
               {/* about / legal — gives the screen real utility and a floor */}
               <Text
                 className="text-ink-faint px-5 pb-2 pt-8"

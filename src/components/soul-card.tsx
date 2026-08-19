@@ -3,9 +3,12 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
+import { useUnits } from "@/lib/units/context";
+import { formatDistance } from "@/lib/units/format";
 import { lifespan, thumbUrl, type Soul } from "@/lib/wikidata";
 
 export function SoulCard({ soul }: { soul: Soul }) {
+  const { unit } = useUnits();
   const initial = (soul.label || "?").trim().charAt(0).toUpperCase();
   const years = lifespan(soul);
 
@@ -82,7 +85,7 @@ export function SoulCard({ soul }: { soul: Soul }) {
 
         <View className="mt-2 flex-row items-center">
           <Text className="font-sans text-ink-faint" style={{ fontSize: 11 }}>
-            {soul.place} · {soul.dist.toFixed(1)} km
+            {soul.place} · {formatDistance(soul.dist, unit)}
           </Text>
           <View style={{ flex: 1 }} />
           <Feather

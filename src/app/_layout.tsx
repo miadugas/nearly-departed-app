@@ -20,6 +20,7 @@ import {
   reportPendingCrash,
 } from "@/lib/crash-report";
 import { FavoritesProvider } from "@/lib/favorites/context";
+import { UnitsProvider } from "@/lib/units/context";
 
 // Supabase's session refresh retries by design when the backend is unreachable
 // (e.g. free-tier project paused); sync degrades to local-only on purpose, so
@@ -53,6 +54,7 @@ export default function RootLayout() {
       <AuthProvider>
         <AvatarProvider>
           <FavoritesProvider>
+            <UnitsProvider>
             <StatusBar style="light" />
             <Stack
               screenOptions={{
@@ -61,6 +63,7 @@ export default function RootLayout() {
                 animation: "slide_from_right",
               }}
             />
+            </UnitsProvider>
           </FavoritesProvider>
         </AvatarProvider>
       </AuthProvider>

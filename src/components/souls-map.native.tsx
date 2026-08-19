@@ -8,6 +8,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Text, View } from "react-native";
 
+import { useUnits } from "@/lib/units/context";
+import { formatDistance } from "@/lib/units/format";
 import type { CemeterySection } from "@/lib/wikidata";
 
 // Free, no-key dark vector basemap. The bespoke "Apple-enough" Maputnik style
@@ -37,6 +39,7 @@ export function SoulsMap({
   onSelectCemetery,
   viewPadding,
 }: Props) {
+  const { unit } = useUnits();
   const [lat, lon] = center;
   const cameraRef = useRef<any>(null);
   // Memoized camera target — a stable reference so the Camera only re-animates
@@ -211,7 +214,7 @@ export function SoulsMap({
               >
                 {selectedSection.data.length}{" "}
                 {selectedSection.data.length === 1 ? "soul" : "souls"} ·{" "}
-                {selectedSection.dist.toFixed(1)} km
+                {formatDistance(selectedSection.dist, unit)}
               </Text>
             </View>
           </Marker>

@@ -17,6 +17,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton, IconButton } from "@/components/icon-button";
 import { useFavorites } from "@/lib/favorites/context";
+import { useUnits } from "@/lib/units/context";
+import { formatDistance } from "@/lib/units/format";
 import { heroUrl, lifeYears, type Soul } from "@/lib/wikidata";
 import { fetchSummary } from "@/lib/wikipedia";
 
@@ -68,6 +70,7 @@ function Stat({
 }
 
 export default function PersonDetail() {
+  const { unit } = useUnits();
   const { data } = useLocalSearchParams<{ data: string }>();
   // Param data crosses process/serialization boundaries (deep links, restored
   // navigation state, remote-synced favorites) — a malformed payload must fall
@@ -168,7 +171,7 @@ export default function PersonDetail() {
                   textTransform: "uppercase",
                 }}
               >
-                {hasDist ? `${soul.dist.toFixed(1)} km from you` : soul.place}
+                {hasDist ? `${formatDistance(soul.dist, unit)} from you` : soul.place}
               </Text>
             </View>
             <Text
@@ -201,7 +204,7 @@ export default function PersonDetail() {
               <Stat label="Resting at" value={soul.place} small />
               <Stat
                 label="Distance"
-                value={hasDist ? `${soul.dist.toFixed(1)} km` : "—"}
+                value={hasDist ? formatDistance(soul.dist, unit) : "—"}
                 noRight
               />
             </View>
