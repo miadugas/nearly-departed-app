@@ -24,6 +24,9 @@ module.exports = {
         display: ["ClashDisplay-Semibold"],
         "display-md": ["ClashDisplay-Medium"],
         "display-bold": ["ClashDisplay-Bold"],
+        // Cormorant Garamond — the archive's editorial serif
+        serif: ["CormorantGaramond_500Medium"],
+        "serif-semibold": ["CormorantGaramond_600SemiBold"],
         // Plus Jakarta Sans — body / UI
         sans: ["PlusJakartaSans_400Regular"],
         "sans-medium": ["PlusJakartaSans_500Medium"],

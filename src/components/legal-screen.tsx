@@ -36,7 +36,6 @@ export function LegalScreen({ source }: { source: string }) {
           className="font-display text-ink text-center"
           style={{ fontSize: 30, letterSpacing: -0.5 }}
           numberOfLines={1}
-          adjustsFontSizeToFit
         >
           {title}
         </Text>

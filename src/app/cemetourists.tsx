@@ -94,7 +94,6 @@ export default function Cemetourists() {
             className="text-ink font-display text-center"
             style={{ fontSize: 30, letterSpacing: -0.5 }}
             numberOfLines={1}
-            adjustsFontSizeToFit
           >
             Cemetourists
           </Text>

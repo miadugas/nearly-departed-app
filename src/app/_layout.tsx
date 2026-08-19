@@ -1,6 +1,10 @@
 import "@/global.css";
 
 import {
+  CormorantGaramond_500Medium,
+  CormorantGaramond_600SemiBold,
+} from "@expo-google-fonts/cormorant-garamond";
+import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
@@ -42,6 +46,8 @@ export default function RootLayout() {
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
+    CormorantGaramond_500Medium,
+    CormorantGaramond_600SemiBold,
     "ClashDisplay-Medium": require("../../assets/fonts/ClashDisplay-Medium.ttf"),
     "ClashDisplay-Semibold": require("../../assets/fonts/ClashDisplay-Semibold.ttf"),
     "ClashDisplay-Bold": require("../../assets/fonts/ClashDisplay-Bold.ttf"),

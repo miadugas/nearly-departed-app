@@ -1,395 +1,111 @@
 import Feather from "@expo/vector-icons/Feather";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { type ComponentProps, type ReactNode, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
-  FlatList,
-  KeyboardAvoidingView,
   Linking,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { HeadstoneIcon } from "@/components/icons";
 import { BackButton } from "@/components/icon-button";
+import {
+  AvatarPickerModal,
+  NameEditorModal,
+} from "@/components/profile-modals";
 import { useAuth } from "@/lib/auth/context";
-import { AVATARS, avatarSource, type AvatarId } from "@/lib/avatar/avatars";
+import { avatarSource } from "@/lib/avatar/avatars";
 import { useAvatar } from "@/lib/avatar/context";
 import { useFavorites } from "@/lib/favorites/context";
-import { useUnits } from "@/lib/units/context";
-import type { FavoriteSoul } from "@/lib/favorites/types";
-import { sanitizeDisplayName } from "@/lib/sync/merge";
-import { lifeYears, thumbUrl } from "@/lib/wikidata";
-
-function FavoriteRow({
-  fav,
-  onRemove,
-}: {
-  fav: FavoriteSoul;
-  onRemove: () => void;
-}) {
-  const initial = (fav.label || "?").trim().charAt(0).toUpperCase();
-  const { born: a, died: b } = lifeYears(fav);
-  const years = a || b ? `${a || "?"}–${b || "?"}` : "";
-
-  return (
-    <Pressable
-      onPress={() =>
-        router.push({
-          pathname: "/person/[qid]",
-          params: { qid: fav.qid, data: JSON.stringify(fav) },
-        })
-      }
-      className="active:bg-glass flex-row items-center gap-3 border-b border-line px-5 py-4"
-    >
-      {fav.image ? (
-        <Image
-          source={{ uri: thumbUrl(fav.image) }}
-          style={{ width: 52, height: 52, borderRadius: 14 }}
-          contentFit="cover"
-        />
-      ) : (
-        <View className="bg-panel-2 h-[52px] w-[52px] items-center justify-center rounded-2xl border border-line">
-          <Text
-            className="font-display text-ink-faint"
-            style={{ fontSize: 21 }}
-          >
-            {initial}
-          </Text>
-        </View>
-      )}
-
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text
-          className="font-display text-ink"
-          style={{ fontSize: 17, letterSpacing: -0.3 }}
-          numberOfLines={1}
-        >
-          {fav.label}
-        </Text>
-        <Text
-          className="font-sans text-ink-dim"
-          style={{ fontSize: 12, marginTop: 2 }}
-          numberOfLines={1}
-        >
-          {[years, fav.place].filter(Boolean).join(" · ") || fav.desc || "—"}
-        </Text>
-      </View>
-
-      <Pressable
-        onPress={onRemove}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="Remove from saved"
-        className="h-9 w-9 items-center justify-center active:opacity-60"
-      >
-        <FontAwesome name="heart" size={16} color="#FF6B81" />
-      </Pressable>
-    </Pressable>
-  );
-}
-
-// One cell in the avatar picker grid — a fixed-size ring that only shows
-// color when selected, wrapping a constant-size circular thumbnail so
-// selecting/deselecting never nudges the artwork inside it.
-function AvatarCell({
-  selected,
-  label,
-  onPress,
-  children,
-}: {
-  selected: boolean;
-  label: string;
-  onPress: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <View style={{ width: "25%", alignItems: "center", paddingVertical: 10 }}>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={{
-          width: 68,
-          height: 68,
-          borderRadius: 34,
-          alignItems: "center",
-          justifyContent: "center",
-          borderWidth: selected ? 2 : 0,
-          borderColor: "#FF6B81",
-        }}
-      >
-        <View
-          className="border-line"
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            overflow: "hidden",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "rgba(255,255,255,0.06)",
-            borderWidth: 1,
-          }}
-        >
-          {children}
-        </View>
-      </Pressable>
-    </View>
-  );
-}
-
-// Bottom-sheet avatar picker — a transparent, slide-up Modal (no new deps)
-// matching the app's dark idiom. "None" is a pinned first cell that clears
-// the selection back to the skull/initial default.
-function AvatarPickerModal({
-  visible,
-  selected,
-  onClose,
-  onSelect,
-}: {
-  visible: boolean;
-  selected: AvatarId | null;
-  onClose: () => void;
-  onSelect: (id: AvatarId | null) => void;
-}) {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <View style={{ flex: 1, justifyContent: "flex-end" }}>
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Close avatar picker"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.6)",
-          }}
-        />
-        <SafeAreaView
-          edges={["bottom"]}
-          className="bg-bg border-t border-line"
-          style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-        >
-          <Text
-            className="text-ink-faint px-5 pb-3 pt-5"
-            style={{
-              fontFamily: "PlusJakartaSans_600SemiBold",
-              fontSize: 11,
-              letterSpacing: 1.6,
-              textTransform: "uppercase",
-            }}
-          >
-            Choose your ghoul
-          </Text>
-          <ScrollView
-            contentContainerStyle={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              paddingHorizontal: 12,
-              paddingBottom: 24,
-            }}
-          >
-            <AvatarCell
-              selected={selected === null}
-              label="None"
-              onPress={() => onSelect(null)}
-            >
-              <MaterialCommunityIcons
-                name="skull-outline"
-                size={28}
-                color="rgba(255,255,255,0.5)"
-              />
-            </AvatarCell>
-            {AVATARS.map((avatar) => (
-              <AvatarCell
-                key={avatar.id}
-                selected={selected === avatar.id}
-                label={avatar.label}
-                onPress={() => onSelect(avatar.id)}
-              >
-                <Image
-                  source={avatar.source}
-                  style={{ width: 60, height: 60 }}
-                  contentFit="cover"
-                />
-              </AvatarCell>
-            ))}
-          </ScrollView>
-        </SafeAreaView>
-      </View>
-    </Modal>
-  );
-}
-
-// Bottom-sheet display-name editor — keyboard avoidance keeps both intent
-// actions reachable while the focused field is open.
-function NameEditorModal({
-  visible,
-  name,
-  onClose,
-  onSave,
-}: {
-  visible: boolean;
-  name: string | null;
-  onClose: () => void;
-  onSave: (name: string | null) => void;
-}) {
-  const [draft, setDraft] = useState(name ?? "");
-
-  const handleSave = () => {
-    onSave(sanitizeDisplayName(draft));
-    onClose();
-  };
-
-  const handleClear = () => {
-    onSave(null);
-    onClose();
-  };
-
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <View style={{ flex: 1, justifyContent: "flex-end" }}>
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Close display name editor"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.6)",
-          }}
-        />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <SafeAreaView
-            edges={["bottom"]}
-            className="bg-bg border-t border-line"
-            style={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
-          >
-            <Text
-              className="text-ink-faint px-5 pb-3 pt-5"
-              style={{
-                fontFamily: "PlusJakartaSans_600SemiBold",
-                fontSize: 11,
-                letterSpacing: 1.6,
-                textTransform: "uppercase",
-              }}
-            >
-              What should we call you?
-            </Text>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              autoFocus={visible}
-              maxLength={40}
-              returnKeyType="done"
-              onSubmitEditing={handleSave}
-              placeholder="Your display name"
-              placeholderTextColor="rgba(255,255,255,0.4)"
-              className="mx-5 h-[54px] rounded-full px-5"
-              style={{
-                backgroundColor: "rgba(255,255,255,0.10)",
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.26)",
-                color: "#fff",
-                fontFamily: "PlusJakartaSans_400Regular",
-                fontSize: 16,
-              }}
-            />
-            <View className="flex-row gap-3 px-5 pb-5 pt-4">
-              <Pressable
-                onPress={handleClear}
-                accessibilityRole="button"
-                accessibilityLabel="Clear display name"
-                className="h-[50px] flex-1 items-center justify-center rounded-full active:opacity-70"
-                style={{
-                  borderWidth: 1,
-                  borderColor: "rgba(255,255,255,0.26)",
-                }}
-              >
-                <Text className="font-sans-semibold text-ink" style={{ fontSize: 15 }}>
-                  Clear
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSave}
-                accessibilityRole="button"
-                accessibilityLabel="Save display name"
-                className="h-[50px] flex-1 items-center justify-center rounded-full active:opacity-80"
-                style={{ backgroundColor: "#fff" }}
-              >
-                <Text
-                  className="font-sans-semibold"
-                  style={{ color: "#0a0a0a", fontSize: 15 }}
-                >
-                  Save
-                </Text>
-              </Pressable>
-            </View>
-          </SafeAreaView>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
-  );
-}
+import { progressToNext, rankFor } from "@/lib/ranks";
 
 const APP_VERSION = Constants.expoConfig?.version ?? "1.0.0";
+const PINK = "#ff6f87";
 
-// Settings/about row — icon, label, chevron. Matches the app's list idiom
-// (thin divider, tap-to-glass) instead of boxing each item in its own card.
-function LinkRow({
+// Menu destination: icon, title, one line of what is behind it, chevron.
+function MenuRow({
   icon,
-  label,
+  title,
+  description,
   onPress,
 }: {
-  icon: ComponentProps<typeof Feather>["name"];
-  label: string;
+  icon: ReactNode;
+  title: string;
+  description: string;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className="active:bg-glass flex-row items-center gap-3 border-b border-line px-5 py-4"
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${description}`}
+      className="active:bg-glass flex-row items-center gap-4 border-b border-line py-5"
     >
-      <Feather name={icon} size={17} color="rgba(255,255,255,0.55)" />
-      <Text className="text-ink font-sans flex-1" style={{ fontSize: 15 }}>
+      <View style={{ width: 30, alignItems: "center" }}>{icon}</View>
+      <View style={{ flex: 1 }}>
+        <Text className="text-ink font-sans" style={{ fontSize: 17 }}>
+          {title}
+        </Text>
+        <Text
+          className="text-ink-dim font-sans"
+          style={{ fontSize: 13.5, marginTop: 5, lineHeight: 18 }}
+        >
+          {description}
+        </Text>
+      </View>
+      <Feather name="chevron-right" size={22} color="rgba(255,255,255,0.6)" />
+    </Pressable>
+  );
+}
+
+// Bare, icon-led action — sign out and its destructive twin.
+function AccountAction({
+  icon,
+  label,
+  destructive,
+  busy,
+  onPress,
+}: {
+  icon: ComponentProps<typeof Feather>["name"];
+  label: string;
+  destructive?: boolean;
+  busy?: boolean;
+  onPress: () => void;
+}) {
+  const tint = destructive ? PINK : "#ffffff";
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={busy}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!busy }}
+      hitSlop={8}
+      className="flex-row items-center gap-5 self-start active:opacity-60"
+      style={{ opacity: busy ? 0.6 : 1 }}
+    >
+      {busy ? (
+        <ActivityIndicator color={tint} style={{ width: 22 }} />
+      ) : (
+        <Feather name={icon} size={22} color={tint} />
+      )}
+      <Text className="font-sans" style={{ fontSize: 17, color: tint }}>
         {label}
       </Text>
-      <Feather name="chevron-right" size={17} color="rgba(255,255,255,0.3)" />
     </Pressable>
   );
 }
 
 export default function Profile() {
-  const { unit, setUnit } = useUnits();
-  const { favorites, remove, isReady } = useFavorites();
+  const { favorites, isReady } = useFavorites();
   const { user, signOut, deleteAccount } = useAuth();
   const { avatarId, setAvatarId, displayName, setDisplayName } = useAvatar();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -398,10 +114,11 @@ export default function Profile() {
 
   const signedIn = !!user;
   const email = user?.email ?? "";
-  const avatarInitial = (displayName ?? (email || "?"))
-    .trim()
-    .charAt(0)
-    .toUpperCase();
+  const name = displayName ?? (signedIn ? email.split("@")[0] : "Guest");
+  const avatarInitial = (name || "?").trim().charAt(0).toUpperCase();
+  const count = favorites.length;
+  const rank = rankFor(count);
+  const progress = progressToNext(count);
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -454,331 +171,323 @@ export default function Profile() {
   return (
     <View className="bg-bg flex-1">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <View className="px-4 pt-1">
-          <BackButton />
-        </View>
-
-        <FlatList
-          data={favorites}
-          keyExtractor={(f) => f.qid}
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 56 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
-          ListHeaderComponent={
-            <View>
-              {/* profile block — signed-in identity or guest CTA */}
-              <View className="items-center px-6 pb-6 pt-4">
-                <Pressable
-                  onPress={() => setPickerOpen(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Change avatar"
-                  style={{ width: 76, height: 76 }}
-                >
-                  <View
-                    className="h-[76px] w-[76px] items-center justify-center rounded-full border border-line"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,0.06)",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {avatarId ? (
-                      <Image
-                        source={avatarSource(avatarId)}
-                        style={{ width: 76, height: 76 }}
-                        contentFit="cover"
-                      />
-                    ) : signedIn ? (
-                      <Text
-                        className="text-ink font-display"
-                        style={{ fontSize: 32 }}
-                      >
-                        {avatarInitial}
-                      </Text>
-                    ) : (
-                      <MaterialCommunityIcons
-                        name="skull-outline"
-                        size={36}
-                        color="rgba(255,255,255,0.5)"
-                      />
-                    )}
-                  </View>
-                  <View
-                    className="border-line"
-                    style={{
-                      position: "absolute",
-                      bottom: -2,
-                      right: -2,
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: "rgba(255,255,255,0.12)",
-                    }}
-                  >
-                    <Feather name="edit-2" size={12} color="#fff" />
-                  </View>
-                </Pressable>
-                <Pressable
-                  onPress={() => setNameEditorOpen(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Edit display name"
-                  className="mt-4 items-center"
-                >
-                  <Text
-                    className="text-ink font-display"
-                    style={{ fontSize: 24, letterSpacing: -0.5 }}
-                    numberOfLines={1}
-                  >
-                    {displayName ?? (signedIn ? email : "Guest")}
-                  </Text>
-                  {signedIn && displayName ? (
-                    <Text
-                      className="text-ink-dim font-sans mt-1 text-center"
-                      style={{ fontSize: 13, lineHeight: 18 }}
-                      numberOfLines={1}
-                    >
-                      {email}
-                    </Text>
-                  ) : null}
-                </Pressable>
-                <Text
-                  className="text-ink-dim font-sans mt-1 text-center"
-                  style={{ fontSize: 13, lineHeight: 18 }}
-                >
-                  {signedIn
-                    ? "You're signed in — saves sync to your account."
-                    : "Not signed in — your saves live on this device."}
-                </Text>
+        >
+          <View className="flex-row items-start justify-between pt-1">
+            <View style={{ flex: 1 }}>
+              <BackButton />
+              <Text
+                className="font-serif mt-5"
+                style={{
+                  color: PINK,
+                  fontSize: 46,
+                  lineHeight: 47,
+                  letterSpacing: -1,
+                }}
+                numberOfLines={2}
+              >
+                {name}&apos;s archive
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => router.push("/settings")}
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+              hitSlop={8}
+              className="mt-1 items-center justify-center rounded-full active:opacity-70"
+              style={{
+                width: 46,
+                height: 46,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.40)",
+              }}
+            >
+              <Feather name="settings" size={20} color="#fff" />
+            </Pressable>
+          </View>
 
-                {signedIn ? (
-                  <View className="items-center">
-                    <Pressable
-                      onPress={handleSignOut}
-                      className="mt-5 flex-row items-center gap-2 rounded-full active:opacity-80"
-                      style={{
-                        backgroundColor: "rgba(255,255,255,0.06)",
-                        borderWidth: 1,
-                        borderColor: "rgba(255,255,255,0.18)",
-                        paddingVertical: 11,
-                        paddingHorizontal: 20,
-                      }}
-                    >
-                      <Feather name="log-out" size={15} color="#fff" />
-                      <Text
-                        className="text-ink font-sans-semibold"
-                        style={{ fontSize: 14 }}
-                      >
-                        Sign out
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={handleDeleteAccount}
-                      disabled={deleting}
-                      accessibilityRole="button"
-                      accessibilityLabel="Delete account"
-                      className="mt-4 active:opacity-60"
-                      hitSlop={8}
-                    >
-                      <Text
-                        className="font-sans"
-                        style={{ fontSize: 13, color: "#FF6B81" }}
-                      >
-                        {deleting ? "Deleting account…" : "Delete account"}
-                      </Text>
-                    </Pressable>
-                  </View>
+          {/* identity — avatar, name, contact, tagline */}
+          <View className="mt-8 flex-row items-center gap-5">
+            <Pressable
+              onPress={() => setPickerOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Change avatar"
+              style={{ width: 118, height: 118 }}
+            >
+              <View
+                style={{
+                  width: 118,
+                  height: 118,
+                  borderRadius: 59,
+                  borderWidth: 2,
+                  borderColor: "#f4f1f2",
+                  overflow: "hidden",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#252525",
+                }}
+              >
+                {avatarId ? (
+                  <Image
+                    source={avatarSource(avatarId)}
+                    style={{ width: 118, height: 118 }}
+                    contentFit="cover"
+                  />
+                ) : signedIn ? (
+                  <Text className="text-ink font-serif" style={{ fontSize: 46 }}>
+                    {avatarInitial}
+                  </Text>
                 ) : (
-                  <Pressable
-                    onPress={() => router.push("/auth")}
-                    className="mt-5 flex-row items-center gap-2 rounded-full active:opacity-80"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,0.12)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255,255,255,0.26)",
-                      paddingVertical: 11,
-                      paddingHorizontal: 20,
-                    }}
-                  >
-                    <Feather name="log-in" size={15} color="#fff" />
-                    <Text
-                      className="text-ink font-sans-semibold"
-                      style={{ fontSize: 14 }}
-                    >
-                      Sign in to sync
-                    </Text>
-                  </Pressable>
+                  <MaterialCommunityIcons
+                    name="skull-outline"
+                    size={48}
+                    color="rgba(255,255,255,0.55)"
+                  />
                 )}
               </View>
-
-              {/* saved section label */}
-              <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
-                <Text
-                  className="text-ink-faint"
-                  style={{
-                    fontFamily: "PlusJakartaSans_600SemiBold",
-                    fontSize: 11,
-                    letterSpacing: 1.6,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Saved
-                </Text>
-                {favorites.length > 0 ? (
-                  <Text
-                    className="text-ink-faint"
-                    style={{
-                      fontFamily: "PlusJakartaSans_600SemiBold",
-                      fontSize: 11,
-                      letterSpacing: 1,
-                    }}
-                  >
-                    {favorites.length}
-                  </Text>
-                ) : null}
+              <View
+                style={{
+                  position: "absolute",
+                  right: -6,
+                  bottom: 2,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.44)",
+                  backgroundColor: "#252525",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="edit-2" size={15} color="#fff" />
               </View>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <FavoriteRow fav={item} onRemove={() => remove(item.qid)} />
-          )}
-          ListEmptyComponent={
-            isReady ? (
-              <View className="items-center px-10 pt-10">
-                <FontAwesome
-                  name="heart-o"
-                  size={28}
-                  color="rgba(255,255,255,0.25)"
-                />
+            </Pressable>
+
+            <View style={{ flex: 1 }}>
+              <Pressable
+                onPress={() => setNameEditorOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Edit display name"
+                hitSlop={6}
+                className="active:opacity-70"
+              >
                 <Text
-                  className="text-ink-dim font-sans mt-4 text-center"
+                  className="text-ink font-serif"
+                  style={{ fontSize: 40, lineHeight: 43, letterSpacing: -0.8 }}
+                  numberOfLines={1}
+                >
+                  {name}
+                </Text>
+              </Pressable>
+              {signedIn ? (
+                <Text
+                  className="text-ink-dim font-sans mt-2"
+                  style={{ fontSize: 12.5 }}
+                  numberOfLines={1}
+                >
+                  {email}
+                </Text>
+              ) : null}
+              {/* rank — standing in the archive, earned by saved souls */}
+              <View className="mt-3 flex-row items-center gap-2">
+                <Feather name="award" size={15} color={PINK} />
+                <Text
+                  className="font-serif"
+                  style={{ color: PINK, fontSize: 22, lineHeight: 24 }}
+                  numberOfLines={1}
+                >
+                  {rank.title}
+                </Text>
+              </View>
+              <Text
+                className="font-sans mt-1.5"
+                style={{ color: "#c5c1c5", fontSize: 13, lineHeight: 18 }}
+              >
+                {rank.blurb}
+              </Text>
+              {progress ? (
+                <Text
+                  className="text-ink-faint font-sans mt-1.5"
+                  style={{ fontSize: 12 }}
+                >
+                  {progress}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View
+            className="mt-10"
+            style={{ height: 1, backgroundColor: "rgba(255,255,255,0.16)" }}
+          />
+
+          {/* saved souls — the count is the hero, the art keeps it company */}
+          <View className="mt-9">
+            <Text
+              className="text-ink-faint font-sans-semibold"
+              style={{
+                fontSize: 12,
+                letterSpacing: 2.6,
+                textTransform: "uppercase",
+              }}
+            >
+              Saved souls
+            </Text>
+            <View className="flex-row items-start justify-between">
+              <View style={{ flex: 1 }}>
+                <Text
+                  className="text-ink font-serif mt-3"
+                  style={{ fontSize: 104, lineHeight: 98 }}
+                >
+                  {isReady ? count : "—"}
+                </Text>
+                <Pressable
+                  onPress={() => router.push("/saved")}
+                  accessibilityRole="button"
+                  accessibilityLabel="View saved souls"
+                  hitSlop={8}
+                  className="mt-7 flex-row items-center gap-3 self-start active:opacity-70"
+                >
+                  <Text
+                    className="font-sans"
+                    style={{ color: PINK, fontSize: 18 }}
+                  >
+                    View saved souls
+                  </Text>
+                  <Feather name="chevron-right" size={20} color={PINK} />
+                </Pressable>
+              </View>
+              <Image
+                source={require("@/assets/images/potion-heart.png")}
+                style={{ width: 150, height: 150, opacity: 0.9 }}
+                contentFit="contain"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              />
+            </View>
+
+            {isReady && count === 0 ? (
+              <View className="mt-4 items-center px-4">
+                <Text
+                  className="font-sans text-center"
+                  style={{ color: "#c9c5c9", fontSize: 15 }}
+                >
+                  Your archive is empty for now.
+                </Text>
+                <Text
+                  className="text-ink-dim font-sans mt-1 text-center"
                   style={{ fontSize: 14, lineHeight: 20 }}
                 >
-                  No saved souls yet.{"\n"}Tap the heart on anyone to keep them
-                  here.
+                  Tap the heart on any soul to keep them here.
                 </Text>
               </View>
-            ) : null
-          }
-          ListFooterComponent={
-            <View>
-              {/* settings — device preferences, not account data */}
-              <Text
-                className="text-ink-faint px-5 pb-2 pt-8"
-                style={{
-                  fontFamily: "PlusJakartaSans_600SemiBold",
-                  fontSize: 11,
-                  letterSpacing: 1.6,
-                  textTransform: "uppercase",
-                }}
-              >
-                Settings
-              </Text>
-              <View className="flex-row items-center gap-3 border-y border-line px-5 py-3.5">
+            ) : null}
+          </View>
+
+          {/* destinations */}
+          <View
+            className="mt-10"
+            style={{
+              borderTopWidth: 1,
+              borderTopColor: "rgba(255,255,255,0.16)",
+            }}
+          >
+            <MenuRow
+              icon={<HeadstoneIcon size={22} />}
+              title="Cemetourists"
+              description="The do's & don'ts of visiting well."
+              onPress={() => router.push("/cemetourists")}
+            />
+            <MenuRow
+              icon={
                 <Feather
-                  name="map-pin"
-                  size={17}
-                  color="rgba(255,255,255,0.55)"
+                  name="heart"
+                  size={22}
+                  color="rgba(255,255,255,0.85)"
                 />
-                <Text
-                  className="text-ink font-sans flex-1"
-                  style={{ fontSize: 15 }}
-                >
-                  Distances
-                </Text>
-                <View
-                  className="flex-row rounded-full"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: "rgba(255,255,255,0.40)",
-                    backgroundColor: "rgba(255,255,255,0.14)",
-                    overflow: "hidden",
-                  }}
-                >
-                  {(["km", "mi"] as const).map((option) => {
-                    const active = unit === option;
-                    return (
-                      <Pressable
-                        key={option}
-                        onPress={() => setUnit(option)}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        accessibilityLabel={
-                          option === "km" ? "Kilometres" : "Miles"
-                        }
-                        hitSlop={{ top: 8, bottom: 8 }}
-                        className="items-center justify-center"
-                        style={{
-                          minWidth: 52,
-                          height: 32,
-                          backgroundColor: active ? "#ffffff" : "transparent",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontFamily: "PlusJakartaSans_600SemiBold",
-                            fontSize: 13,
-                            color: active
-                              ? "#0a0a0a"
-                              : "rgba(255,255,255,0.7)",
-                          }}
-                        >
-                          {option}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
+              }
+              title="Saved souls"
+              description="View and manage your archive."
+              onPress={() => router.push("/saved")}
+            />
+            <MenuRow
+              icon={
+                <Feather
+                  name="shield"
+                  size={22}
+                  color="rgba(255,255,255,0.85)"
+                />
+              }
+              title="Privacy"
+              description="How your data is handled, in plain English."
+              onPress={() => router.push("/legal/privacy")}
+            />
+            <MenuRow
+              icon={
+                <Feather
+                  name="file-text"
+                  size={22}
+                  color="rgba(255,255,255,0.85)"
+                />
+              }
+              title="Terms of Service"
+              description="The rules of the road, and the graveyard."
+              onPress={() => router.push("/legal/terms")}
+            />
+            <MenuRow
+              icon={
+                <Feather
+                  name="mail"
+                  size={22}
+                  color="rgba(255,255,255,0.85)"
+                />
+              }
+              title="Support"
+              description="Get help or send us a message."
+              onPress={() => {
+                Linking.openURL("mailto:nearlydepartedapp@gmail.com").catch(
+                  () => {},
+                );
+              }}
+            />
+          </View>
 
-              {/* about / legal — gives the screen real utility and a floor */}
-              <Text
-                className="text-ink-faint px-5 pb-2 pt-8"
-                style={{
-                  fontFamily: "PlusJakartaSans_600SemiBold",
-                  fontSize: 11,
-                  letterSpacing: 1.6,
-                  textTransform: "uppercase",
-                }}
-              >
-                About
-              </Text>
-              <View className="border-t border-line">
-                <LinkRow
-                  icon="compass"
-                  label="Cemetourists — the do's & don'ts"
-                  onPress={() => router.push("/cemetourists")}
+          {/* account */}
+          <View className="mt-10 gap-7">
+            {signedIn ? (
+              <>
+                <AccountAction
+                  icon="log-out"
+                  label="Sign out"
+                  onPress={handleSignOut}
                 />
-                <LinkRow
-                  icon="mail"
-                  label="Support"
-                  onPress={() => {
-                    Linking.openURL("mailto:nearlydepartedapp@gmail.com").catch(
-                      () => {},
-                    );
-                  }}
+                <AccountAction
+                  icon="trash-2"
+                  label={deleting ? "Deleting account…" : "Delete account"}
+                  destructive
+                  busy={deleting}
+                  onPress={handleDeleteAccount}
                 />
-                <LinkRow
-                  icon="file-text"
-                  label="Terms of Service"
-                  onPress={() => router.push("/legal/terms")}
-                />
-                <LinkRow
-                  icon="shield"
-                  label="Privacy Policy"
-                  onPress={() => router.push("/legal/privacy")}
-                />
-              </View>
+              </>
+            ) : (
+              <AccountAction
+                icon="log-in"
+                label="Sign in to sync"
+                onPress={() => router.push("/auth")}
+              />
+            )}
+          </View>
 
-              <Text
-                className="text-ink-faint font-sans text-center"
-                style={{ fontSize: 12, marginTop: 28, letterSpacing: 0.2 }}
-              >
-                Nearly Departed · v{APP_VERSION}
-              </Text>
-            </View>
-          }
-        />
+          <Text
+            className="text-ink-faint font-sans mt-12 text-center"
+            style={{ fontSize: 12, letterSpacing: 0.2 }}
+          >
+            Nearly Departed · v{APP_VERSION}
+          </Text>
+        </ScrollView>
       </SafeAreaView>
 
       <AvatarPickerModal
