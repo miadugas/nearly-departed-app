@@ -5,9 +5,8 @@ import {
   Map as MapLibreMap,
   Marker,
 } from "@maplibre/maplibre-react-native";
-import Feather from "@expo/vector-icons/Feather";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Pressable, Text, View } from "react-native";
+import { Animated, Easing, Text, View } from "react-native";
 
 import type { CemeterySection } from "@/lib/wikidata";
 
@@ -24,49 +23,10 @@ type Props = {
   sections: CemeterySection[];
   selected: string | null;
   onSelectCemetery?: (title: string) => void;
-  onRecenter?: () => void;
-  // sheet coupling: the locate button hugs the sheet's top edge — `controlBottom`
-  // seats it above the expanded sheet, `controlShift` slides it down in lockstep
-  // as the sheet collapses (same Animated.Value driving the sheet's translateY).
-  controlShift?: Animated.Value;
-  controlBottom?: number;
   // camera bottom inset in points — the sheet covers the lower screen, so camera
   // targets center in the visible band above it instead of behind the sheet
   viewPadding?: number;
 };
-
-function MapButton({
-  name,
-  onPress,
-}: {
-  name: keyof typeof Feather.glyphMap;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable onPress={onPress} style={{ marginTop: 8 }}>
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          alignItems: "center",
-          justifyContent: "center",
-          // unified with IconButton: light glass + hairline border + shadow
-          backgroundColor: "rgba(255,255,255,0.14)",
-          borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.32)",
-          shadowColor: "#000",
-          shadowOpacity: 0.35,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 6,
-        }}
-      >
-        <Feather name={name} size={18} color="#fff" />
-      </View>
-    </Pressable>
-  );
-}
 
 export function SoulsMap({
   center,
@@ -75,9 +35,6 @@ export function SoulsMap({
   sections,
   selected,
   onSelectCemetery,
-  onRecenter,
-  controlShift,
-  controlBottom,
   viewPadding,
 }: Props) {
   const [lat, lon] = center;
@@ -131,10 +88,6 @@ export function SoulsMap({
   };
   const selectedSection = cems.find((s) => s.title === selected);
 
-  const recenter = () => {
-    cameraRef.current?.flyTo?.([userCenter[1], userCenter[0]], 600);
-    onRecenter?.();
-  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -265,17 +218,6 @@ export function SoulsMap({
         )}
       </MapLibreMap>
 
-      {/* locate — zoom is pinch-to-zoom (no +/- buttons, mobile-map standard) */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          right: 12,
-          bottom: controlBottom ?? 40,
-          transform: controlShift ? [{ translateY: controlShift }] : undefined,
-        }}
-      >
-        <MapButton name="navigation" onPress={recenter} />
-      </Animated.View>
     </View>
   );
 }

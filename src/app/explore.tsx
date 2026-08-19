@@ -2,7 +2,7 @@ import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -21,6 +21,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { BackButton, IconButton } from "@/components/icon-button";
+import { useAuth } from "@/lib/auth/context";
 import { PlaceSearch } from "@/components/place-search";
 import { SoulCard } from "@/components/soul-card";
 import { SoulsMap } from "@/components/souls-map";
@@ -34,6 +35,7 @@ const zoomFor = (r: number) =>
   r <= 10 ? 12 : r <= 25 ? 10.5 : r <= 50 ? 9.5 : 8;
 
 export default function Discover() {
+  const { user } = useAuth();
   const { locate } = useLocalSearchParams<{ locate?: string }>();
   const loc = useDeviceLocation(locate !== "0");
   const [radius, setRadius] = useState(25);
@@ -78,18 +80,19 @@ export default function Discover() {
   const [collapsed, setCollapsed] = useState(false);
   const shift = useMemo(() => new Animated.Value(0), []);
   // mutable context for gesture callbacks — never read during render
-  const drag = useMemo(() => ({ collapsed: false, max: 0 }), []);
+  const dragRef = useRef({ collapsed: false, max: 0 });
   useEffect(() => {
-    drag.max = dragMax;
+    dragRef.current.max = dragMax;
     // header height changed while collapsed (e.g. walk-up header) — re-seat
-    if (drag.collapsed) shift.setValue(dragMax);
-  }, [drag, dragMax, shift]);
+    if (dragRef.current.collapsed) shift.setValue(dragMax);
+  }, [dragMax, shift]);
 
   const settle = useMemo(
     () => (next: boolean) => {
       // collapsing means typing is over; expanding may BE the focus path —
       // dismissing there would kill the keyboard the moment search opens it
       if (next) Keyboard.dismiss();
+      const drag = dragRef.current;
       drag.collapsed = next;
       Animated.spring(shift, {
         toValue: next ? drag.max : 0,
@@ -99,7 +102,7 @@ export default function Discover() {
       }).start();
       setCollapsed(next);
     },
-    [drag, shift],
+    [shift],
   );
 
   const handlePan = useMemo(
@@ -114,11 +117,13 @@ export default function Discover() {
           Math.abs(g.dy) > 6 && Math.abs(g.dy) > Math.abs(g.dx),
         onPanResponderMove: (_e, g) => {
           Keyboard.dismiss();
+          const drag = dragRef.current;
           const base = drag.collapsed ? drag.max : 0;
           const next = Math.min(drag.max, Math.max(0, base + g.dy));
           shift.setValue(next);
         },
         onPanResponderRelease: (_e, g) => {
+          const drag = dragRef.current;
           const base = drag.collapsed ? drag.max : 0;
           const pos = Math.min(drag.max, Math.max(0, base + g.dy));
           const next =
@@ -134,8 +139,12 @@ export default function Discover() {
           setCollapsed(next);
         },
       }),
-    [drag, shift],
+    [shift],
   );
+
+  // recenter is declarative: bumping the nonce nudges the camera center by
+  // ~1cm, so the Camera props change and it flies home even after a manual pan
+  const [homeNonce, setHomeNonce] = useState(0);
 
   const toggleCemetery = (title: string) => {
     setFocused((prev) => (prev === title ? null : title));
@@ -144,7 +153,7 @@ export default function Discover() {
 
   const mapCenter: [number, number] = focusedSection?.coord
     ? focusedSection.coord
-    : [activeLat, activeLon];
+    : [activeLat + homeNonce * 1e-7, activeLon];
   const mapZoom = focusedSection ? 14 : zoomFor(radius);
 
   return (
@@ -158,9 +167,6 @@ export default function Discover() {
           sections={sections}
           selected={focused}
           onSelectCemetery={toggleCemetery}
-          onRecenter={() => setFocused(null)}
-          controlShift={shift}
-          controlBottom={sheetH + 16}
           viewPadding={collapsed ? headerH + insets.bottom : sheetH - 24}
         />
         <LinearGradient
@@ -183,7 +189,7 @@ export default function Discover() {
             className="flex-row items-center justify-between px-4 pt-1"
             pointerEvents="box-none"
           >
-            <BackButton />
+            {user ? <View style={{ width: 44 }} /> : <BackButton />}
             <IconButton
               icon={
                 <MaterialCommunityIcons
@@ -298,7 +304,38 @@ export default function Discover() {
                   </Text>
                 </Pressable>
               ) : null}
-              <View className="mt-3 flex-row gap-2">
+              <View className="mt-3 flex-row items-center gap-2">
+                <Pressable
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setPlace(null);
+                    setFocused(null);
+                    setHomeNonce((n) => n + 1);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Center map on my location"
+                  hitSlop={8}
+                  className="items-center justify-center rounded-full active:opacity-70"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.32)",
+                    backgroundColor: "rgba(255,255,255,0.14)",
+                  }}
+                >
+                  {/* glowy cyan-blue arrow */}
+                  <Feather
+                    name="navigation"
+                    size={15}
+                    color="#57b8d8"
+                    style={{
+                      textShadowColor: "rgba(87,184,216,0.95)",
+                      textShadowRadius: 7,
+                      textShadowOffset: { width: 0, height: 0 },
+                    }}
+                  />
+                </Pressable>
                 {RADII.map((r) => {
                   const active = r === radius;
                   return (
@@ -312,13 +349,22 @@ export default function Discover() {
                       accessibilityLabel={`${r} kilometer radius`}
                       accessibilityState={{ selected: active }}
                       hitSlop={{ top: 8, bottom: 8 }}
-                      className={`rounded-full border px-3.5 py-1.5 ${active ? "border-ink bg-ink" : "border-line"}`}
+                      className="items-center justify-center rounded-full"
+                      style={{
+                        flex: 1,
+                        height: 34,
+                        borderWidth: 1,
+                        borderColor: active ? "#ffffff" : "rgba(255,255,255,0.32)",
+                        backgroundColor: active
+                          ? "#ffffff"
+                          : "rgba(255,255,255,0.14)",
+                      }}
                     >
                       <Text
                         style={{
                           fontFamily: "PlusJakartaSans_600SemiBold",
                           fontSize: 12,
-                          color: active ? "#0a0a0a" : "rgba(255,255,255,0.6)",
+                          color: active ? "#0a0a0a" : "rgba(255,255,255,0.7)",
                         }}
                       >
                         {r} km
@@ -327,9 +373,9 @@ export default function Discover() {
                   );
                 })}
               </View>
-              <View className="mt-1 flex-row items-center justify-between">
+              <View className="mt-3 flex-row items-center justify-between">
                 <Text
-                  className="font-sans text-ink-dim mt-2"
+                  className="font-sans text-ink-dim"
                   style={{ fontSize: 13, flex: 1 }}
                 >
                   {loc.status === "loading"

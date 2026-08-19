@@ -1,5 +1,5 @@
 import Feather from "@expo/vector-icons/Feather";
-import { Animated, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 import type { CemeterySection } from "@/lib/wikidata";
 
@@ -12,9 +12,6 @@ type Props = {
   sections: CemeterySection[];
   selected: string | null;
   onSelectCemetery?: (title: string) => void;
-  onRecenter?: () => void;
-  controlShift?: Animated.Value;
-  controlBottom?: number;
   viewPadding?: number;
 };
 

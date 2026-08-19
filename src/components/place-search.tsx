@@ -1,5 +1,4 @@
 import Feather from "@expo/vector-icons/Feather";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
@@ -69,11 +68,18 @@ export function PlaceSearch({
             }}
             hitSlop={10}
           >
-            <MaterialCommunityIcons
-              name="close-circle"
-              size={20}
-              color="#FF6B81"
-            />
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 10,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "rgba(255,255,255,0.92)",
+              }}
+            >
+              <Feather name="x" size={13} color="#0a0a0a" />
+            </View>
           </Pressable>
         )}
       </View>
