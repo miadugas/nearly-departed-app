@@ -196,21 +196,6 @@ export default function Profile() {
                 {name}&apos;s archive
               </Text>
             </View>
-            <Pressable
-              onPress={() => router.push("/settings")}
-              accessibilityRole="button"
-              accessibilityLabel="Settings"
-              hitSlop={8}
-              className="mt-1 items-center justify-center rounded-full active:opacity-70"
-              style={{
-                width: 46,
-                height: 46,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.40)",
-              }}
-            >
-              <Feather name="settings" size={20} color="#fff" />
-            </Pressable>
           </View>
 
           {/* identity — avatar, name, contact, tagline */}

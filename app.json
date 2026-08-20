@@ -13,7 +13,8 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "19"
     },
     "android": {
       "adaptiveIcon": {

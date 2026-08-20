@@ -4,6 +4,8 @@ import { router, usePathname } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { emitTabReselect } from "@/lib/tab-signal";
+
 const PINK = "#ff6f87";
 const IDLE = "rgba(255,255,255,0.55)";
 
@@ -53,8 +55,10 @@ const TABS: Tab[] = [
 
 /**
  * Persistent quick-access bar. The app routes through a Stack rather than
- * expo-router Tabs, so this navigates with `replace` — tapping between the four
- * destinations swaps the screen instead of piling entries onto the back stack.
+ * expo-router Tabs, so this uses `navigate`: it pops back to a destination
+ * already in the stack instead of stacking a duplicate, which keeps the back
+ * button pointing at the screen you actually came from. Tapping the tab you're
+ * already on resets that screen (see `tab-signal`).
  */
 export function TabBar() {
   const insets = useSafeAreaInsets();
@@ -79,7 +83,8 @@ export function TabBar() {
           <Pressable
             key={tab.href}
             onPress={() => {
-              if (!active) router.replace(tab.href);
+              if (active) emitTabReselect(tab.href);
+              else router.navigate(tab.href);
             }}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}

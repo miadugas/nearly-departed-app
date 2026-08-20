@@ -1,12 +1,10 @@
 import Feather from "@expo/vector-icons/Feather";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  Easing,
   type GestureResponderEvent,
   Keyboard,
   Pressable,
@@ -16,19 +14,14 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { useReducedMotion } from "react-native-reanimated";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BackButton, IconButton } from "@/components/icon-button";
-import { useAuth } from "@/lib/auth/context";
 import { PlaceSearch } from "@/components/place-search";
 import { SoulCard } from "@/components/soul-card";
 import { SoulsMap } from "@/components/souls-map";
 import { TAB_BAR_HEIGHT, TabBar } from "@/components/tab-bar";
 import { useDeviceLocation } from "@/hooks/use-device-location";
+import { onTabReselect } from "@/lib/tab-signal";
 import { useNearbySouls } from "@/hooks/use-nearby-souls";
 import type { Place } from "@/lib/geocode";
 import { useUnits } from "@/lib/units/context";
@@ -44,7 +37,6 @@ const zoomFor = (r: number) =>
   r <= 10 ? 12 : r <= 25 ? 10.5 : r <= 50 ? 9.5 : 8;
 
 export default function Discover() {
-  const { user } = useAuth();
   const { unit } = useUnits();
   const { locate } = useLocalSearchParams<{ locate?: string }>();
   const loc = useDeviceLocation(locate !== "0");
@@ -191,36 +183,14 @@ export default function Discover() {
   // recenter is declarative: bumping the nonce nudges the camera center by
   // ~1cm, so the Camera props change and it flies home even after a manual pan
   const [homeNonce, setHomeNonce] = useState(0);
-
-  // locate button breathes the same ring the "you" marker pulses on the map.
-  // Peak opacity is capped at 0.25 so the arrow keeps >3:1 contrast against it
-  // (WCAG 1.4.11), and it holds still under Reduce Motion (2.3.3).
-  const reduceMotion = useReducedMotion();
-  const locatePulse = useMemo(() => new Animated.Value(0), []);
-  useEffect(() => {
-    if (reduceMotion) {
-      locatePulse.setValue(1); // parked = fully faded out
-      return;
-    }
-    const anim = Animated.loop(
-      Animated.timing(locatePulse, {
-        toValue: 1,
-        duration: 1900,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [locatePulse, reduceMotion]);
-  const locateRingScale = locatePulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.55, 1.5],
-  });
-  const locateRingOpacity = locatePulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.25, 0],
-  });
+  const recenter = useCallback(() => {
+    Keyboard.dismiss();
+    setPlace(null);
+    setFocused(null);
+    setHomeNonce((n) => n + 1);
+  }, []);
+  // tapping Location while already here flies the map home
+  useEffect(() => onTabReselect("/explore", recenter), [recenter]);
 
   const toggleCemetery = (title: string) => {
     setFocused((prev) => (prev === title ? null : title));
@@ -258,29 +228,6 @@ export default function Discover() {
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
-        <SafeAreaView
-          edges={["top"]}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="box-none"
-        >
-          <View
-            className="flex-row items-center justify-between px-4 pt-1"
-            pointerEvents="box-none"
-          >
-            {user ? <View style={{ width: 44 }} /> : <BackButton />}
-            <IconButton
-              icon={
-                <MaterialCommunityIcons
-                  name="skull-outline"
-                  size={20}
-                  color="#fff"
-                />
-              }
-              onPress={() => router.push("/profile")}
-              accessibilityLabel="Profile"
-            />
-          </View>
-        </SafeAreaView>
       </View>
 
       {/* sheet — rides `shift`; header stays on-screen, list slides away */}
@@ -390,52 +337,6 @@ export default function Discover() {
                 </Pressable>
               ) : null}
               <View className="mt-3 flex-row items-center gap-2">
-                <Pressable
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    setPlace(null);
-                    setFocused(null);
-                    setHomeNonce((n) => n + 1);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Center map on my location"
-                  hitSlop={8}
-                  className="items-center justify-center rounded-full active:opacity-70"
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderWidth: 1,
-                    borderColor: "rgba(255,255,255,0.40)",
-                    backgroundColor: "rgba(255,255,255,0.14)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <Animated.View
-                    pointerEvents="none"
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants"
-                    style={{
-                      position: "absolute",
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      backgroundColor: "#4c8dff",
-                      transform: [{ scale: locateRingScale }],
-                      opacity: locateRingOpacity,
-                    }}
-                  />
-                  {/* glowy arrow — YOU_BLUE, matching the "you" dot on the map */}
-                  <Feather
-                    name="navigation"
-                    size={15}
-                    color="#4c8dff"
-                    style={{
-                      textShadowColor: "rgba(76,141,255,0.95)",
-                      textShadowRadius: 7,
-                      textShadowOffset: { width: 0, height: 0 },
-                    }}
-                  />
-                </Pressable>
                 {RADII.map((r, slot) => {
                   const active = slot === radiusSlot;
                   return (
