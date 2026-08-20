@@ -1,10 +1,15 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/icon-button";
+import { TAB_BAR_HEIGHT, TabBar } from "@/components/tab-bar";
 import { useUnits } from "@/lib/units/context";
 
 export default function Settings() {
+  const insets = useSafeAreaInsets();
   const { unit, setUnit } = useUnits();
 
   return (
@@ -15,7 +20,7 @@ export default function Settings() {
         </View>
 
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 48 + TAB_BAR_HEIGHT + insets.bottom }}
           showsVerticalScrollIndicator={false}
         >
           <Text
@@ -89,6 +94,8 @@ export default function Settings() {
           </Text>
         </ScrollView>
       </SafeAreaView>
+
+      <TabBar />
     </View>
   );
 }

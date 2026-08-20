@@ -13,10 +13,14 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { HeadstoneIcon, ReaperIcon } from "@/components/icons-drawn";
 import { BackButton } from "@/components/icon-button";
+import { TAB_BAR_HEIGHT, TabBar } from "@/components/tab-bar";
 import {
   AvatarPickerModal,
   NameEditorModal,
@@ -105,6 +109,7 @@ function AccountAction({
 }
 
 export default function Profile() {
+  const insets = useSafeAreaInsets();
   const { favorites, isReady } = useFavorites();
   const { user, signOut, deleteAccount } = useAuth();
   const { avatarId, setAvatarId, displayName, setDisplayName } = useAvatar();
@@ -172,7 +177,7 @@ export default function Profile() {
     <View className="bg-bg flex-1">
       <SafeAreaView edges={["top"]} className="flex-1">
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 56 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 56 + TAB_BAR_HEIGHT + insets.bottom }}
           showsVerticalScrollIndicator={false}
         >
           <View className="flex-row items-start justify-between pt-1">
@@ -512,6 +517,8 @@ export default function Profile() {
         onClose={() => setNameEditorOpen(false)}
         onSave={setDisplayName}
       />
+
+      <TabBar />
     </View>
   );
 }

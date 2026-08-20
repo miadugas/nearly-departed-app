@@ -1,12 +1,17 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { FlatList, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { FavoriteRow } from "@/components/favorite-row";
 import { BackButton } from "@/components/icon-button";
+import { TAB_BAR_HEIGHT, TabBar } from "@/components/tab-bar";
 import { useFavorites } from "@/lib/favorites/context";
 
 export default function Saved() {
+  const insets = useSafeAreaInsets();
   const { favorites, remove, isReady } = useFavorites();
 
   return (
@@ -20,7 +25,7 @@ export default function Saved() {
           data={favorites}
           keyExtractor={(f) => f.qid}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 48 }}
+          contentContainerStyle={{ paddingBottom: 48 + TAB_BAR_HEIGHT + insets.bottom }}
           ListHeaderComponent={
             <View className="px-6 pb-5 pt-4">
               <Text
@@ -70,6 +75,8 @@ export default function Saved() {
           }
         />
       </SafeAreaView>
+
+      <TabBar />
     </View>
   );
 }

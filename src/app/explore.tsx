@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/auth/context";
 import { PlaceSearch } from "@/components/place-search";
 import { SoulCard } from "@/components/soul-card";
 import { SoulsMap } from "@/components/souls-map";
+import { TAB_BAR_HEIGHT, TabBar } from "@/components/tab-bar";
 import { useDeviceLocation } from "@/hooks/use-device-location";
 import { useNearbySouls } from "@/hooks/use-nearby-souls";
 import type { Place } from "@/lib/geocode";
@@ -89,7 +90,7 @@ export default function Discover() {
   const insets = useSafeAreaInsets();
   const sheetH = Math.round((winH * 5) / 9) + 24;
   const [headerH, setHeaderH] = useState(220);
-  const dragMax = Math.max(0, sheetH - headerH - insets.bottom - 8);
+  const dragMax = Math.max(0, sheetH - headerH - 8);
 
   const [collapsed, setCollapsed] = useState(false);
   const shift = useMemo(() => new Animated.Value(0), []);
@@ -242,7 +243,9 @@ export default function Discover() {
           sections={sections}
           selected={focused}
           onSelectCemetery={toggleCemetery}
-          viewPadding={collapsed ? headerH + insets.bottom : sheetH - 24}
+          viewPadding={
+            (collapsed ? headerH : sheetH - 24) + TAB_BAR_HEIGHT + insets.bottom
+          }
         />
         <LinearGradient
           colors={[
@@ -287,8 +290,8 @@ export default function Discover() {
           position: "absolute",
           left: 0,
           right: 0,
-          bottom: -insets.bottom,
-          height: sheetH + insets.bottom,
+          bottom: TAB_BAR_HEIGHT + insets.bottom,
+          height: sheetH,
           transform: [{ translateY: shift }],
         }}
       >
@@ -567,7 +570,7 @@ export default function Discover() {
                 )
               }
               stickySectionHeadersEnabled
-              contentContainerStyle={{ paddingBottom: 32 + insets.bottom }}
+              contentContainerStyle={{ paddingBottom: 32 }}
               ListEmptyComponent={
                 <View className="items-center px-8 pt-16">
                   <Text
@@ -582,6 +585,8 @@ export default function Discover() {
           )}
         </Animated.View>
       </Animated.View>
+
+      <TabBar />
     </View>
   );
 }
