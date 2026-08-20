@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { HeadstoneIcon } from "@/components/icons";
+import { HeadstoneIcon, ReaperIcon } from "@/components/icons-drawn";
 import { BackButton } from "@/components/icon-button";
 import {
   AvatarPickerModal,
@@ -400,6 +400,12 @@ export default function Profile() {
               title="Cemetourists"
               description="The do's & don'ts of visiting well."
               onPress={() => router.push("/cemetourists")}
+            />
+            <MenuRow
+              icon={<ReaperIcon size={22} color={PINK} />}
+              title="Processions"
+              description="Guided cemetery walks. Coming soon."
+              onPress={() => router.push("/processions")}
             />
             <MenuRow
               icon={
