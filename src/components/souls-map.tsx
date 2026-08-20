@@ -13,6 +13,7 @@ type Props = {
   selected: string | null;
   onSelectCemetery?: (title: string) => void;
   viewPadding?: number;
+  bounds?: [number, number, number, number];
 };
 
 export function SoulsMap({ sections }: Props) {

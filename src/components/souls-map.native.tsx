@@ -28,6 +28,9 @@ type Props = {
   // camera bottom inset in points — the sheet covers the lower screen, so camera
   // targets center in the visible band above it instead of behind the sheet
   viewPadding?: number;
+  // [west, south, east, north] — when set, the camera frames this box instead
+  // of centering, so the nearest results are on screen with you
+  bounds?: [number, number, number, number];
 };
 
 export function SoulsMap({
@@ -38,19 +41,24 @@ export function SoulsMap({
   selected,
   onSelectCemetery,
   viewPadding,
+  bounds,
 }: Props) {
   const { unit } = useUnits();
   const [lat, lon] = center;
   const cameraRef = useRef<any>(null);
   // Memoized camera target — a stable reference so the Camera only re-animates
   // when the focus point actually changes, not on every parent re-render.
+  const padding = useMemo(
+    () => ({ bottom: viewPadding ?? 0 }),
+    [viewPadding],
+  );
   const view = useMemo(
-    () => ({
-      center: [lon, lat] as [number, number],
-      zoom,
-      padding: { bottom: viewPadding ?? 0 },
-    }),
-    [lat, lon, zoom, viewPadding],
+    () => ({ center: [lon, lat] as [number, number], zoom }),
+    [lat, lon, zoom],
+  );
+  const framed = useMemo(
+    () => (bounds ? ([...bounds] as [number, number, number, number]) : null),
+    [bounds],
   );
 
   // pulsing "you" ring
@@ -95,14 +103,24 @@ export function SoulsMap({
   return (
     <View style={{ flex: 1 }}>
       <MapLibreMap mapStyle={DARK_STYLE} style={{ flex: 1 }}>
-        <Camera
-          ref={cameraRef}
-          center={view.center as [number, number]}
-          zoom={view.zoom}
-          padding={view.padding}
-          duration={600}
-          easing="ease"
-        />
+        {framed ? (
+          <Camera
+            ref={cameraRef}
+            bounds={framed}
+            padding={padding}
+            duration={600}
+            easing="ease"
+          />
+        ) : (
+          <Camera
+            ref={cameraRef}
+            center={view.center as [number, number]}
+            zoom={view.zoom}
+            padding={padding}
+            duration={600}
+            easing="ease"
+          />
+        )}
 
         {/* you — blue, pulsing */}
         <Marker lngLat={[lon, lat]} anchor="center">

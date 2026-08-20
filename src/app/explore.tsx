@@ -202,6 +202,26 @@ export default function Discover() {
     : [activeLat + homeNonce * 1e-7, activeLon];
   const mapZoom = focusedSection ? 14 : zoomFor(radiusKm);
 
+  // Frame the nearest cemetery together with you, so the top result in the list
+  // is always visible on the map — a lone blue dot in empty space is useless.
+  // Walk-up mode opts out: there the camera belongs on the chosen cemetery.
+  const nearest = focusedSection
+    ? null
+    : sections.find((section) => section.coord)?.coord;
+  const mapBounds = useMemo((): [number, number, number, number] | undefined => {
+    if (!nearest) return undefined;
+    const [nLat, nLon] = nearest;
+    // a margin keeps both pins off the very edge of the visible band
+    const padLat = Math.max(Math.abs(nLat - activeLat) * 0.35, 0.004);
+    const padLon = Math.max(Math.abs(nLon - activeLon) * 0.35, 0.004);
+    return [
+      Math.min(nLon, activeLon) - padLon,
+      Math.min(nLat, activeLat) - padLat,
+      Math.max(nLon, activeLon) + padLon,
+      Math.max(nLat, activeLat) + padLat,
+    ];
+  }, [nearest, activeLat, activeLon]);
+
   return (
     <View className="bg-bg flex-1">
       {/* map — full-bleed behind the sheet so collapsing reveals more of it */}
@@ -216,6 +236,7 @@ export default function Discover() {
           viewPadding={
             (collapsed ? headerH : sheetH - 24) + TAB_BAR_HEIGHT + insets.bottom
           }
+          bounds={mapBounds}
         />
         <LinearGradient
           colors={[
