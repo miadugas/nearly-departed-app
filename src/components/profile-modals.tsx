@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AVATARS, type AvatarId } from "@/lib/avatar/avatars";
+import { checkDisplayName } from "@/lib/name-policy";
 import { sanitizeDisplayName } from "@/lib/sync/merge";
 
 function AvatarCell({
@@ -168,13 +169,22 @@ export function NameEditorModal({
   onSave: (name: string | null) => void;
 }) {
   const [draft, setDraft] = useState(name ?? "");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = () => {
-    onSave(sanitizeDisplayName(draft));
+    // Policy first (it explains itself), then the shared sanitizer for shape.
+    const verdict = checkDisplayName(draft);
+    if (!verdict.ok) {
+      setError(verdict.reason);
+      return;
+    }
+    setError(null);
+    onSave(verdict.name === null ? null : sanitizeDisplayName(verdict.name));
     onClose();
   };
 
   const handleClear = () => {
+    setError(null);
     onSave(null);
     onClose();
   };
@@ -221,7 +231,10 @@ export function NameEditorModal({
             </Text>
             <TextInput
               value={draft}
-              onChangeText={setDraft}
+              onChangeText={(next) => {
+                setDraft(next);
+                if (error) setError(null);
+              }}
               autoFocus={visible}
               maxLength={40}
               returnKeyType="done"
@@ -232,12 +245,21 @@ export function NameEditorModal({
               style={{
                 backgroundColor: "rgba(255,255,255,0.10)",
                 borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.26)",
+                borderColor: error ? "#ff6f87" : "rgba(255,255,255,0.26)",
                 color: "#fff",
                 fontFamily: "PlusJakartaSans_400Regular",
                 fontSize: 16,
               }}
             />
+            {error ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                className="font-sans px-6 pt-2"
+                style={{ color: "#ff6f87", fontSize: 13, lineHeight: 18 }}
+              >
+                {error}
+              </Text>
+            ) : null}
             <View className="flex-row gap-3 px-5 pb-5 pt-4">
               <Pressable
                 onPress={handleClear}
