@@ -440,7 +440,7 @@ export default function Profile() {
                 />
               }
               title="Terms of Service"
-              description="The rules of the road, and the graveyard."
+              description="What you agree to by using the app."
               onPress={() => router.push("/legal/terms")}
             />
             <MenuRow
