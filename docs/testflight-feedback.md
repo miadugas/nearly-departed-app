@@ -4,6 +4,7 @@
 
 | # | Issue | Source | Status |
 | --- | --- | --- | --- |
+| 5 | Location never requested on the sign-in entry point: `auth.tsx` redirected to `/explore?locate=0` after Apple sign-in and email verify, which *disabled* `useDeviceLocation` rather than deferring it — the session was stuck on the Denver sample with no way to ask, since "Back to my location" only cleared a searched place. Same dead end for anyone who declined the first prompt. Fixed: `useDeviceLocation` exposes `request()` and separates `denied` from `blocked` (`canAskAgain`); Discover shows a context-dependent control (Use my location / Enable location in Settings / Back to my location). `auth.tsx` unchanged, so no alert stacks on the dismissing Apple sheet. | Mia, on device while recording the App Review video 2026-08-21 | **fixed** |
 | 4 | Discovery bottom sheet: results list is now collapsible — tap or fling the handle pill; header (search/radius/status) stays, map takes the freed space via one LayoutAnimation transition. Tapping a cemetery pin auto-expands. Simulator-verified both directions. | Mia, TF on device (build 4) 2026-08-18 | fixed (in working tree) |
 
 ## Shipped in build 4 (v1.0.2)
