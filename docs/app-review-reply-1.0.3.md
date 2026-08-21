@@ -1,4 +1,6 @@
-# App Review reply — 1.0.2 (17), Guideline 2.1 Information Needed
+# App Review reply — Guideline 2.1 Information Needed
+
+Rejected build: 1.0.2 (17). Fix ships as **1.0.3**.
 
 Rejected 2026-08-20. Submission ID `5e5b7e04-e2be-42be-42c5-b389-63062c702e58`.
 
@@ -6,7 +8,7 @@ Apple's rejection is an information request, not a bug report. Separately, a rea
 defect surfaced while preparing the recording: entering through "Sign in or create
 account" never requested location, and nothing in Discover could ask for it
 afterwards, so that path was stuck on the Denver sample. Fixed — see the
-"Location fix" section — which means this reply ships against a **new build**,
+"Location fix" section — which means this reply ships against **1.0.3**,
 not 1.0.2 (17).
 
 Reply in App Store Connect with the text below, attach the recording, then
@@ -19,7 +21,9 @@ Before replying, fill the two `[FILL]` markers and confirm the two blockers:
 - [ ] Email OTP still sends from `signin@smallpartsstudio.com` (curl the
       `/auth/v1/otp` endpoint once)
 - [ ] `[FILL: device model]` and `[FILL: iOS version]` in item 2
-- [ ] `[FILL: build number]` in item 2 — the new build with the location fix
+- [ ] `[FILL: build number]` in item 2 — the 1.0.3 build with the location fix
+- [ ] Create the 1.0.3 version page in App Store Connect (a 1.0.3 build cannot
+      attach to the rejected 1.0.2 submission) and copy the notes into it
 - [ ] New build uploaded and attached to the version before resubmitting
 - [ ] Screen recording captured on a physical device (shot list at the bottom)
 
@@ -50,7 +54,7 @@ location (When In Use), and the recording shows that prompt in context.
 
 Tested on a physical [FILL: device model, e.g. iPhone 15 Pro] running iOS
 [FILL: e.g. 26.0], distributed through TestFlight, plus the iOS Simulator for
-iPhone 17 Pro. The build under review is 1.0.2 ([FILL: build number]).
+iPhone 17 Pro. The build under review is 1.0.3 ([FILL: build number]).
 
 **3. What the app does, and who it is for**
 
@@ -211,7 +215,7 @@ rejection:
 
 ---
 
-## Location fix (shipped in the build attached to this reply)
+## Location fix (shipped in 1.0.3)
 
 **Symptom.** "Use my location" on the onboarding screen prompted correctly, but
 signing in with Apple never prompted, and the map silently sat on the Denver
