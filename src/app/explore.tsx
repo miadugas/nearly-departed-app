@@ -202,25 +202,22 @@ export default function Discover() {
     : [activeLat + homeNonce * 1e-7, activeLon];
   const mapZoom = focusedSection ? 14 : zoomFor(radiusKm);
 
-  // Frame the nearest cemetery together with you, so the top result in the list
-  // is always visible on the map — a lone blue dot in empty space is useless.
-  // Walk-up mode opts out: there the camera belongs on the chosen cemetery.
-  const nearest = focusedSection
-    ? null
-    : sections.find((section) => section.coord)?.coord;
+  // Frame the search radius around you, so the map always shows the area the
+  // list is describing — 5 mi reads tight, 90 mi reads wide. Everything in the
+  // list is inside this box by definition, nearest included. Walk-up mode opts
+  // out: there the camera belongs on the chosen cemetery.
   const mapBounds = useMemo((): [number, number, number, number] | undefined => {
-    if (!nearest) return undefined;
-    const [nLat, nLon] = nearest;
-    // a margin keeps both pins off the very edge of the visible band
-    const padLat = Math.max(Math.abs(nLat - activeLat) * 0.35, 0.004);
-    const padLon = Math.max(Math.abs(nLon - activeLon) * 0.35, 0.004);
+    if (focusedSection) return undefined;
+    const latDelta = radiusKm / 111;
+    const lonDelta =
+      radiusKm / (111 * Math.max(0.2, Math.cos((activeLat * Math.PI) / 180)));
     return [
-      Math.min(nLon, activeLon) - padLon,
-      Math.min(nLat, activeLat) - padLat,
-      Math.max(nLon, activeLon) + padLon,
-      Math.max(nLat, activeLat) + padLat,
+      activeLon - lonDelta,
+      activeLat - latDelta,
+      activeLon + lonDelta,
+      activeLat + latDelta,
     ];
-  }, [nearest, activeLat, activeLon]);
+  }, [focusedSection, radiusKm, activeLat, activeLon]);
 
   return (
     <View className="bg-bg flex-1">
