@@ -12,6 +12,8 @@ type Props = {
   sections: CemeterySection[];
   selected: string | null;
   onSelectCemetery?: (title: string) => void;
+  // native-only: tapping bare map leaves walk-up mode
+  onPressMap?: () => void;
   viewPadding?: number;
   bounds?: [number, number, number, number];
 };
