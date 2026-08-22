@@ -7,7 +7,6 @@ import {
   Animated,
   type GestureResponderEvent,
   Keyboard,
-  Linking,
   Pressable,
   SectionList,
   StyleSheet,
@@ -21,7 +20,7 @@ import { PlaceSearch } from "@/components/place-search";
 import { SoulCard } from "@/components/soul-card";
 import { SoulsMap } from "@/components/souls-map";
 import { TAB_BAR_HEIGHT, TabBar } from "@/components/tab-bar";
-import { useDeviceLocation } from "@/hooks/use-device-location";
+import { useLocation } from "@/lib/location/context";
 import { onTabReselect } from "@/lib/tab-signal";
 import { useNearbySouls } from "@/hooks/use-nearby-souls";
 import type { Place } from "@/lib/geocode";
@@ -40,8 +39,17 @@ const zoomFor = (r: number) =>
 export default function Discover() {
   const { unit } = useUnits();
   const { locate } = useLocalSearchParams<{ locate?: string }>();
-  const loc = useDeviceLocation(locate !== "0");
+  const loc = useLocation();
   const { status: locStatus, request: requestLocation } = loc;
+
+  // Reached from onboarding's "Use my location", so ask straight away. Any
+  // other entry point (sign-in) leaves it to the Location tab.
+  const autoAsked = useRef(false);
+  useEffect(() => {
+    if (locate === "0" || autoAsked.current || locStatus === "granted") return;
+    autoAsked.current = true;
+    requestLocation();
+  }, [locate, locStatus, requestLocation]);
   // The chosen radius is a slot, not a number, so switching units keeps the
   // same rung of the ladder (25 km ↔ 15 mi) without any state juggling.
   const RADII = RADIUS_CHOICES[unit];
@@ -67,49 +75,6 @@ export default function Discover() {
       ? "near you"
       : "Denver (sample)";
 
-  // One control covers three dead ends: a searched place to back out of, a
-  // session that never auto-asked (the sign-in entry point), and a prompt the
-  // user declined. Without it "Back to my location" quietly means Denver.
-  const locationCta = useMemo(() => {
-    if (locStatus === "granted") {
-      return place
-        ? {
-            label: "Back to my location",
-            icon: "x" as const,
-            busy: false,
-            onPress: () => setPlace(null),
-          }
-        : null;
-    }
-    if (locStatus === "loading") {
-      return {
-        label: "Finding you\u2026",
-        icon: "loader" as const,
-        busy: true,
-        onPress: () => {},
-      };
-    }
-    if (locStatus === "blocked") {
-      // iOS won't show the prompt again — Settings is the only way back.
-      return {
-        label: "Enable location in Settings",
-        icon: "settings" as const,
-        busy: false,
-        onPress: () => {
-          Linking.openSettings();
-        },
-      };
-    }
-    return {
-      label: "Use my location",
-      icon: "map-pin" as const,
-      busy: false,
-      onPress: () => {
-        setPlace(null);
-        requestLocation();
-      },
-    };
-  }, [locStatus, requestLocation, place]);
 
   // walk-up mode: tap a cemetery pin to focus the list on just that resting place
   const [focused, setFocused] = useState<string | null>(null);
@@ -383,34 +348,6 @@ export default function Discover() {
                 // collapsed sheet + keyboard would bury the field — surface it
                 onFocus={() => settle(false)}
               />
-              {locationCta ? (
-                <Pressable
-                  onPress={locationCta.onPress}
-                  disabled={locationCta.busy}
-                  accessibilityRole="button"
-                  accessibilityLabel={locationCta.label}
-                  // primary recovery control, not a decorative link — give it the
-                  // 44pt floor rather than the text's own line height
-                  hitSlop={{ top: 10, bottom: 10, left: 12, right: 12 }}
-                  style={{ minHeight: 44, justifyContent: "center" }}
-                  className="flex-row items-center gap-1.5 self-start active:opacity-70"
-                >
-                  <Feather
-                    name={locationCta.icon}
-                    size={13}
-                    color="rgba(255,255,255,0.6)"
-                  />
-                  <Text
-                    className="text-ink-dim"
-                    style={{
-                      fontFamily: "PlusJakartaSans_600SemiBold",
-                      fontSize: 12,
-                    }}
-                  >
-                    {locationCta.label}
-                  </Text>
-                </Pressable>
-              ) : null}
               <View className="mt-3 flex-row items-center gap-2">
                 {RADII.map((r, slot) => {
                   const active = slot === radiusSlot;

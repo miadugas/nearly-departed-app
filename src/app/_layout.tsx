@@ -24,6 +24,7 @@ import {
   reportPendingCrash,
 } from "@/lib/crash-report";
 import { FavoritesProvider } from "@/lib/favorites/context";
+import { LocationProvider } from "@/lib/location/context";
 import { UnitsProvider } from "@/lib/units/context";
 
 // Supabase's session refresh retries by design when the backend is unreachable
@@ -61,6 +62,7 @@ export default function RootLayout() {
         <AvatarProvider>
           <FavoritesProvider>
             <UnitsProvider>
+            <LocationProvider>
             <StatusBar style="light" />
             <Stack
               screenOptions={{
@@ -69,6 +71,7 @@ export default function RootLayout() {
                 animation: "slide_from_right",
               }}
             />
+            </LocationProvider>
             </UnitsProvider>
           </FavoritesProvider>
         </AvatarProvider>

@@ -11,12 +11,13 @@ import { Animated, Easing, Text, View } from "react-native";
 import { useUnits } from "@/lib/units/context";
 import { formatDistance } from "@/lib/units/format";
 import type { CemeterySection } from "@/lib/wikidata";
+import { YOU_BLUE } from "@/lib/colors";
 
 // Free, no-key dark vector basemap. The bespoke "Apple-enough" Maputnik style
 // (on OpenFreeMap / Protomaps tiles) is the deliberate polish deliverable.
 const DARK_STYLE =
   "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
-const YOU_BLUE = "#4c8dff";
+
 
 type Props = {
   center: [number, number]; // [lat, lon] — current focus target (cemetery or you)

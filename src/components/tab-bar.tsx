@@ -1,9 +1,12 @@
 import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router, usePathname } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Animated, Linking, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { YOU_BLUE } from "@/lib/colors";
+import { useLocation } from "@/lib/location/context";
 import { emitTabReselect } from "@/lib/tab-signal";
 
 const PINK = "#ff6f87";
@@ -63,6 +66,35 @@ const TABS: Tab[] = [
 export function TabBar() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const loc = useLocation();
+  const { status: locStatus, request: requestLocation } = loc;
+  // Until location is granted, the Location tab is the app's one call to
+  // action, so it wears the map dot's blue and breathes to earn a look.
+  const wantsLocation = locStatus !== "granted";
+  const [pulse] = useState(() => new Animated.Value(1));
+
+  useEffect(() => {
+    if (!wantsLocation) {
+      pulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 0.35,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [wantsLocation, pulse]);
 
   return (
     <View
@@ -78,27 +110,53 @@ export function TabBar() {
     >
       {TABS.map((tab) => {
         const active = pathname === tab.href;
-        const color = active ? PINK : IDLE;
+        const isLocation = tab.href === "/explore";
+        const asking = isLocation && wantsLocation;
+        const color = asking ? YOU_BLUE : active ? PINK : IDLE;
+        const label = isLocation
+          ? wantsLocation
+            ? "Use My Location"
+            : "Your Location"
+          : tab.label;
+
+        const onPress = () => {
+          if (asking) {
+            // iOS won't re-prompt once hard-denied; Settings is the only way back.
+            if (locStatus === "blocked") Linking.openSettings();
+            else requestLocation();
+            if (!active) router.navigate(tab.href);
+            return;
+          }
+          if (active) emitTabReselect(tab.href);
+          else router.navigate(tab.href);
+        };
+
         return (
           <Pressable
             key={tab.href}
-            onPress={() => {
-              if (active) emitTabReselect(tab.href);
-              else router.navigate(tab.href);
-            }}
+            onPress={onPress}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={tab.label}
+            accessibilityLabel={label}
             className="flex-1 items-center justify-center active:opacity-70"
             style={{ height: TAB_BAR_HEIGHT, gap: 3 }}
           >
-            {tab.render(color)}
-            <Text
+            <Animated.View style={asking ? { opacity: pulse } : undefined}>
+              {tab.render(color)}
+            </Animated.View>
+            <Animated.Text
               className="font-sans-semibold"
-              style={{ color, fontSize: 10.5, letterSpacing: 0.2 }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={{
+                color,
+                fontSize: 10.5,
+                letterSpacing: 0.2,
+                ...(asking ? { opacity: pulse } : null),
+              }}
             >
-              {tab.label}
-            </Text>
+              {label}
+            </Animated.Text>
           </Pressable>
         );
       })}
