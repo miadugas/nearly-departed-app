@@ -241,6 +241,7 @@ export default function Discover() {
           sections={sections}
           selected={focused}
           onSelectCemetery={toggleCemetery}
+          onPressMap={() => setFocused(null)}
           viewPadding={
             (collapsed ? headerH : sheetH - 24) + TAB_BAR_HEIGHT + insets.bottom
           }
@@ -305,15 +306,16 @@ export default function Discover() {
             <View className="px-5 pb-2 pt-1">
               <Pressable
                 onPress={() => setFocused(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Back to all nearby cemeteries"
+                // the only way out of walk-up mode, and the label is only 18pt
+                // tall — grow the target with slop so the layout doesn't shift
+                hitSlop={{ top: 14, bottom: 14, left: 22, right: 26 }}
                 className="flex-row items-center gap-1.5 self-start active:opacity-70"
               >
-                <Feather
-                  name="chevron-left"
-                  size={15}
-                  color="rgba(255,255,255,0.6)"
-                />
+                <Feather name="chevron-left" size={15} color="#ffffff" />
                 <Text
-                  className="text-ink-dim"
+                  className="text-ink"
                   style={{
                     fontFamily: "PlusJakartaSans_600SemiBold",
                     fontSize: 12,
@@ -391,13 +393,25 @@ export default function Discover() {
                   className="font-sans text-ink-dim"
                   style={{ fontSize: 13, flex: 1 }}
                 >
-                  {loc.status === "loading"
-                    ? "Finding you…"
-                    : isLoading
-                      ? "Consulting the records…"
-                      : isError
-                        ? "Query failed — pick a radius to retry."
-                        : `${total} notable souls within ${formatRadius(radius, unit)} · ${placeLabel}`}
+                  {loc.status === "loading" ? (
+                    "Finding you…"
+                  ) : isLoading ? (
+                    "Consulting the records…"
+                  ) : isError ? (
+                    "Query failed — pick a radius to retry."
+                  ) : (
+                    // the count and where you are carry the meaning; the
+                    // connective words stay dim so they don't compete
+                    <>
+                      <Text className="font-sans-semibold text-ink">
+                        {total}
+                      </Text>
+                      {` notable souls within ${formatRadius(radius, unit)} · `}
+                      <Text className="font-sans-semibold text-ink">
+                        {placeLabel}
+                      </Text>
+                    </>
+                  )}
                 </Text>
                 <Pressable
                   onPress={() => settle(!collapsed)}
@@ -459,17 +473,43 @@ export default function Discover() {
               renderSectionHeader={({ section }) =>
                 focusedSection ? null : (
                   <View className="bg-bg flex-row items-center justify-between border-b border-line px-5 py-2.5">
-                    <Text
-                      className="text-ink-dim"
-                      style={{
-                        fontFamily: "PlusJakartaSans_600SemiBold",
-                        fontSize: 11,
-                        letterSpacing: 1.5,
-                        textTransform: "uppercase",
-                      }}
+                    {/* long names truncate; the distance and count never do */}
+                    <View
+                      className="mr-5 flex-1 flex-row items-center"
+                      style={{ minWidth: 0 }}
                     >
-                      {section.title} · {formatDistance(section.dist, unit)}
-                    </Text>
+                      <Text
+                        className="text-ink"
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        style={{
+                          flexShrink: 1,
+                          // hard cap so a long name always leaves room for the
+                          // distance and count instead of crowding them
+                          maxWidth: "68%",
+                          fontFamily: "PlusJakartaSans_600SemiBold",
+                          fontSize: 11,
+                          letterSpacing: 1.5,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {section.title}
+                      </Text>
+                      <Text
+                        className="text-ink"
+                        numberOfLines={1}
+                        style={{
+                          flexShrink: 0,
+                          fontFamily: "PlusJakartaSans_600SemiBold",
+                          fontSize: 11,
+                          letterSpacing: 1.5,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {" · "}
+                        {formatDistance(section.dist, unit)}
+                      </Text>
+                    </View>
                     <Text
                       className="text-ink-faint"
                       style={{

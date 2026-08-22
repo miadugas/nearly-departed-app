@@ -26,6 +26,8 @@ type Props = {
   sections: CemeterySection[];
   selected: string | null;
   onSelectCemetery?: (title: string) => void;
+  // tapping bare map (not a pin) leaves walk-up mode
+  onPressMap?: () => void;
   // camera bottom inset in points — the sheet covers the lower screen, so camera
   // targets center in the visible band above it instead of behind the sheet
   viewPadding?: number;
@@ -41,6 +43,7 @@ export function SoulsMap({
   sections,
   selected,
   onSelectCemetery,
+  onPressMap,
   viewPadding,
   bounds,
 }: Props) {
@@ -99,11 +102,21 @@ export function SoulsMap({
     })),
   };
   const selectedSection = cems.find((s) => s.title === selected);
+  // A pin tap also bubbles to the map, which would select then immediately
+  // deselect. The pin stamps this first; the map press ignores that window.
+  const pinTapAt = useRef(0);
 
 
   return (
     <View style={{ flex: 1 }}>
-      <MapLibreMap mapStyle={DARK_STYLE} style={{ flex: 1 }}>
+      <MapLibreMap
+        mapStyle={DARK_STYLE}
+        style={{ flex: 1 }}
+        onPress={() => {
+          if (Date.now() - pinTapAt.current < 300) return;
+          onPressMap?.();
+        }}
+      >
         {framed ? (
           <Camera
             ref={cameraRef}
@@ -167,7 +180,10 @@ export function SoulsMap({
             const title = features?.[0]?.properties?.title as
               | string
               | undefined;
-            if (title) onSelectCemetery?.(title);
+            if (title) {
+              pinTapAt.current = Date.now();
+              onSelectCemetery?.(title);
+            }
           }}
         >
           <Layer
