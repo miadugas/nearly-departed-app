@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PlaceSearch } from "@/components/place-search";
 import { SoulCard } from "@/components/soul-card";
 import { SoulsMap } from "@/components/souls-map";
+import { LoadingScreen } from "@/components/loading-screen";
 import { TAB_BAR_HEIGHT, TabBar } from "@/components/tab-bar";
 import { useLocation } from "@/lib/location/context";
 import { onTabReselect } from "@/lib/tab-signal";
@@ -42,13 +43,21 @@ export default function Discover() {
   const loc = useLocation();
   const { status: locStatus, request: requestLocation } = loc;
 
-  // Reached from onboarding's "Use my location", so ask straight away. Any
-  // other entry point (sign-in) leaves it to the Location tab.
+  // Both entry points that land here on purpose — onboarding's "Use my
+  // location" and finishing sign-in — ask straight away. A frame of delay lets
+  // the Apple sheet finish dismissing before the system alert goes up.
   const autoAsked = useRef(false);
   useEffect(() => {
-    if (locate === "0" || autoAsked.current || locStatus === "granted") return;
-    autoAsked.current = true;
-    requestLocation();
+    // "fallback" is the untouched state the provider starts in — anything else
+    // means we already asked. Latch inside the timer, not before it: a
+    // double-invoked effect clears the pending timeout, and latching early
+    // would make the second run skip and the prompt never fire.
+    if (locate === "0" || autoAsked.current || locStatus !== "fallback") return;
+    const t = setTimeout(() => {
+      autoAsked.current = true;
+      requestLocation();
+    }, 350);
+    return () => clearTimeout(t);
   }, [locate, locStatus, requestLocation]);
   // The chosen radius is a slot, not a number, so switching units keeps the
   // same rung of the ladder (25 km ↔ 15 mi) without any state juggling.
@@ -68,6 +77,23 @@ export default function Discover() {
     isError,
   } = useNearbySouls(activeLat, activeLon, radiusKm);
   const sections = useMemo(() => groupByCemetery(souls ?? []), [souls]);
+
+  // Cover the cold-start / post-sign-in wait so the seed city never flashes as
+  // if it were real results. keepPreviousData means `isLoading` is only true
+  // before anything has ever loaded, so this can't come back on a radius
+  // change — no latch needed.
+  // Floor the loader at 1s. On a warm connection the location + query gap is
+  // 200-400ms, and a panel that appears and vanishes inside half a second
+  // reads as a glitch. 1s is the "uninterrupted flow of thought" threshold —
+  // long enough to register as a deliberate beat, short enough not to stall.
+  const [minHeld, setMinHeld] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMinHeld(true), 1000);
+    return () => clearTimeout(t);
+  }, []);
+  const showLoader =
+    locate !== "0" &&
+    (!minHeld || locStatus === "loading" || (isLoading && !souls));
   const total = souls?.length ?? 0;
   const placeLabel = place
     ? `near ${place.label}`
@@ -540,6 +566,14 @@ export default function Discover() {
       </Animated.View>
 
       <TabBar />
+      <LoadingScreen
+        visible={showLoader}
+        message={
+          locStatus === "loading"
+            ? "Finding you\u2026"
+            : "Finding the departed\u2026"
+        }
+      />
     </View>
   );
 }
