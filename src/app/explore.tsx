@@ -42,13 +42,15 @@ export default function Discover() {
   const loc = useLocation();
   const { status: locStatus, request: requestLocation } = loc;
 
-  // Reached from onboarding's "Use my location", so ask straight away. Any
-  // other entry point (sign-in) leaves it to the Location tab.
+  // Both entry points that land here on purpose — onboarding's "Use my
+  // location" and finishing sign-in — ask straight away. A frame of delay lets
+  // the Apple sheet finish dismissing before the system alert goes up.
   const autoAsked = useRef(false);
   useEffect(() => {
     if (locate === "0" || autoAsked.current || locStatus === "granted") return;
     autoAsked.current = true;
-    requestLocation();
+    const t = setTimeout(requestLocation, 350);
+    return () => clearTimeout(t);
   }, [locate, locStatus, requestLocation]);
   // The chosen radius is a slot, not a number, so switching units keeps the
   // same rung of the ladder (25 km ↔ 15 mi) without any state juggling.

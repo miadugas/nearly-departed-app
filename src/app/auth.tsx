@@ -137,7 +137,7 @@ export default function Auth() {
     try {
       await signInWithApple();
       // onAuthStateChange persists the session; drop the user into the app.
-      router.replace({ pathname: "/explore", params: { locate: "0" } });
+      router.replace({ pathname: "/explore", params: { locate: "1" } });
     } catch (e) {
       // Dismissing the Apple sheet isn't an error.
       const canceled =
@@ -186,7 +186,7 @@ export default function Auth() {
     try {
       await verifyCode(email, code);
       // onAuthStateChange persists the session; drop the user into the app.
-      router.replace({ pathname: "/explore", params: { locate: "0" } });
+      router.replace({ pathname: "/explore", params: { locate: "1" } });
     } catch (e) {
       if (__DEV__) console.warn("[auth] Code verification failed", e);
       setError(
