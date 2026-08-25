@@ -1,5 +1,6 @@
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 
 // Fallback when location is denied/unavailable (matches the POC seed city).
 const DENVER = { lat: 39.7392, lon: -104.9903 };
@@ -63,6 +64,29 @@ export function useDeviceLocation(enabled = true): DeviceLocation {
       commit({ ...DENVER, status: "fallback" });
     }
   }, []);
+
+  // Mirror status for the AppState listener, which would otherwise close over
+  // a stale value.
+  const statusRef = useRef<LocationStatus>(enabled ? "loading" : "fallback");
+  useEffect(() => {
+    statusRef.current = state.status;
+  }, [state.status]);
+
+  // Granting in Settings is the only way back from a hard denial and it fires
+  // no callback — without this the app returns to the foreground still holding
+  // the seed city, and nothing short of a relaunch fixes it.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active") return;
+      if (statusRef.current === "granted") return;
+      Location.getForegroundPermissionsAsync()
+        .then(({ status }) => {
+          if (status === "granted") runLocate();
+        })
+        .catch(() => {});
+    });
+    return () => sub.remove();
+  }, [runLocate]);
 
   const request = useCallback(() => {
     // Keep the previous coordinates while re-asking, so the map doesn't flash
