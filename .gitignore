@@ -45,3 +45,6 @@ example
 
 # supabase CLI local state
 supabase/.temp/
+
+# local quarantine — files pending deletion, never committed
+.quarantine/
