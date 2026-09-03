@@ -16,7 +16,7 @@ This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") han
 ## Information we collect and how it's used
 
 **1. Location data.**
-If you tap "Use my location," the App requests permission to access your device's location **while you are using the App** ("When In Use"). Your approximate coordinates are used to:
+If you tap "Continue," the App requests permission to access your device's location **while you are using the App** ("When In Use"). Your approximate coordinates are used to:
 
 - center the map, and
 - query public databases for notable people buried near that point.
