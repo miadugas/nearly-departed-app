@@ -115,7 +115,7 @@ export function TabBar() {
         const color = asking ? YOU_BLUE : active ? PINK : IDLE;
         const label = isLocation
           ? wantsLocation
-            ? "Use My Location"
+            ? "Continue"
             : "Your Location"
           : tab.label;
 

@@ -107,7 +107,7 @@ export default function Onboarding() {
                   className="font-sans-semibold ml-2"
                   style={{ color: "#0a0a0a", fontSize: 16 }}
                 >
-                  Use my location
+                  Continue
                 </Text>
                 <View
                   className="absolute right-2 h-9 w-9 items-center justify-center rounded-full"
