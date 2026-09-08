@@ -27,6 +27,12 @@ export type CemeterySection = {
 
 const ENDPOINT = "https://query.wikidata.org/sparql";
 
+// How many burials the nearest-first subquery takes. Exported because the UI
+// has to know when a result set is capped: in a dense city every one of these
+// rows can sit inside the city centre, so "within 90 mi" would be a lie and a
+// radius-sized map box would stack every pin under the user dot.
+export const NEARBY_LIMIT = 150;
+
 // Device language (e.g. "fr" from "fr-CA"), falling back to English. Used so
 // names/places/occupations come back localized worldwide, then English.
 function deviceLang(): string {
@@ -37,26 +43,30 @@ function deviceLang(): string {
   }
 }
 
-function buildQuery(lat: number, lon: number, radiusKm: number) {
+export function buildQuery(lat: number, lon: number, radiusKm: number) {
   const lang = deviceLang();
   const labelLang = lang === "en" ? "en" : `${lang},en`;
   return `
 SELECT ?person ?personLabel ?personDescription ?placeLabel ?coord ?dist ?article ?image ?dob ?dod
        (GROUP_CONCAT(DISTINCT ?occLabel; separator=", ") AS ?occs) WHERE {
-  # Nearest 150 first (subquery), THEN enrich — so the OPTIONAL joins only touch
-  # 150 rows, not every burial in radius. Keeps dense-city queries ~3s, not 30s+.
+  # Nearest ${NEARBY_LIMIT} first (subquery), THEN enrich — so the OPTIONAL joins only touch
+  # ${NEARBY_LIMIT} rows, not every burial in radius. Keeps dense-city queries ~3s, not 30s+.
+  # Grouped by person so this subquery's row count IS the distinct-person count: a burial
+  # place with two P625 coordinate claims (or a person with two burial places) used to yield
+  # the same person twice inside the LIMIT, which fetchNearbySouls' capped check relies on.
   {
-    SELECT ?person ?place ?coord ?dist WHERE {
-      ?person wdt:P119 ?place.
+    SELECT ?person (SAMPLE(?p) AS ?place) (SAMPLE(?c) AS ?coord) (MIN(?d) AS ?dist) WHERE {
+      ?person wdt:P119 ?p.
       SERVICE wikibase:around {
-        ?place wdt:P625 ?coord.
+        ?p wdt:P625 ?c.
         bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral.
         bd:serviceParam wikibase:radius "${radiusKm}".
-        bd:serviceParam wikibase:distance ?dist.
+        bd:serviceParam wikibase:distance ?d.
       }
     }
+    GROUP BY ?person
     ORDER BY ?dist
-    LIMIT 150
+    LIMIT ${NEARBY_LIMIT}
   }
   OPTIONAL { ?person wdt:P18 ?image. }
   OPTIONAL { ?article schema:about ?person ; schema:isPartOf <https://en.wikipedia.org/> . }
@@ -71,6 +81,8 @@ ORDER BY ?dist`;
 
 type Binding = Record<string, { value: string } | undefined>;
 
+export type NearbyResult = { souls: Soul[]; capped: boolean };
+
 function parsePoint(wkt: string): [number, number] | null {
   const m = wkt.match(/Point\(([-\d.]+) ([-\d.]+)\)/);
   return m ? [parseFloat(m[2]), parseFloat(m[1])] : null;
@@ -80,7 +92,7 @@ export async function fetchNearbySouls(
   lat: number,
   lon: number,
   radiusKm: number,
-): Promise<Soul[]> {
+): Promise<NearbyResult> {
   const url =
     `${ENDPOINT}?format=json&query=` +
     encodeURIComponent(buildQuery(lat, lon, radiusKm));
@@ -121,7 +133,15 @@ export async function fetchNearbySouls(
       occs: r.occs?.value ? r.occs.value.split(", ").filter(Boolean) : [],
     });
   }
-  return souls;
+  // The cap has to be read off distinct QIDs, not raw row count: the inner
+  // subquery caps at NEARBY_LIMIT rows of (person, place, coord, dist), but
+  // OPTIONAL joins on P18/P569/etc multiply rows per extra image or date claim
+  // — so raw rows over-count. The final soul count under-counts too, since
+  // unlabeled junk gets dropped after this loop. Distinct QIDs seen (before
+  // that junk filter) is the one number that matches the subquery's row cap
+  // exactly, since the subquery now groups by person.
+  const capped = seen.size >= NEARBY_LIMIT;
+  return { souls, capped };
 }
 
 export function groupByCemetery(souls: Soul[]): CemeterySection[] {

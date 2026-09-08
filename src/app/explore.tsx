@@ -32,10 +32,48 @@ import {
   formatRadius,
   radiusToKm,
 } from "@/lib/units/format";
-import { groupByCemetery } from "@/lib/wikidata";
+import {
+  type CemeterySection,
+  type Soul,
+  groupByCemetery,
+} from "@/lib/wikidata";
 
 const zoomFor = (r: number) =>
   r <= 10 ? 12 : r <= 25 ? 10.5 : r <= 50 ? 9.5 : 8;
+
+// Delayed + min-hold flag: a spinner that flashes for a 200ms fetch reads
+// as a glitch, and one that pops in for 50ms reads as a flicker. Show only
+// after `delay`, and once shown keep it at least `minVisible`.
+function useSettledFlag(active: boolean, delay = 120, minVisible = 500) {
+  const [shown, setShown] = useState(false);
+  // When the spinner actually went up. The hide path needs it to size the
+  // remaining hold, and a ref keeps `shown` out of the effect's deps — taking
+  // it there would restart the effect on the flip and cancel its own timer.
+  const shownAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (active) {
+      const t = setTimeout(() => {
+        shownAt.current = Date.now();
+        setShown(true);
+      }, delay);
+      return () => clearTimeout(t);
+    }
+    // Settled before the delay elapsed — nothing was ever drawn, nothing to hold.
+    if (shownAt.current === null) {
+      setShown(false);
+      return;
+    }
+    const remaining = Math.max(0, minVisible - (Date.now() - shownAt.current));
+    const t = setTimeout(() => {
+      shownAt.current = null;
+      setShown(false);
+    }, remaining);
+    return () => clearTimeout(t);
+  }, [active, delay, minVisible]);
+
+  return shown;
+}
 
 export default function Discover() {
   const { unit } = useUnits();
@@ -72,10 +110,16 @@ export default function Discover() {
   const activeLon = place?.lon ?? loc.lon;
 
   const {
-    data: souls,
+    data,
     isLoading,
     isError,
+    isPlaceholderData,
   } = useNearbySouls(activeLat, activeLon, radiusKm);
+  const souls = data?.souls;
+  // keepPreviousData hands back the *previous* list under a new lat/lon/radius
+  // key, so this is exactly "you're looking at results for the old query".
+  const refreshing = isPlaceholderData;
+  const showRefreshing = useSettledFlag(refreshing);
   const sections = useMemo(() => groupByCemetery(souls ?? []), [souls]);
 
   // Cover the cold-start / post-sign-in wait so the seed city never flashes as
@@ -95,19 +139,53 @@ export default function Discover() {
     locate !== "0" &&
     (!minHeld || locStatus === "loading" || (isLoading && !souls));
   const total = souls?.length ?? 0;
+  // The query takes the nearest NEARBY_LIMIT burials, not everything in radius.
+  // Hitting the cap means the results describe a much smaller area than the
+  // chosen radius — in Paris at 90 mi all 150 rows are inside the city — so the
+  // header and the map both have to stop talking about the radius.
+  const capped = data?.capped ?? false;
   const placeLabel = place
     ? `near ${place.label}`
     : loc.status === "granted"
       ? "near you"
       : "Denver (sample)";
 
-
   // walk-up mode: tap a cemetery pin to focus the list on just that resting place
   const [focused, setFocused] = useState<string | null>(null);
   const focusedSection = focused
     ? sections.find((s) => s.title === focused)
     : null;
-  const visibleSections = focusedSection ? [focusedSection] : sections;
+  // memoised so the scroll-to-top effect below doesn't re-run every render
+  const visibleSections = useMemo(
+    () => (focusedSection ? [focusedSection] : sections),
+    [focusedSection, sections],
+  );
+
+  // Swapping stale results for fresh ones at the user's old scroll offset reads
+  // as the list "jumping". Once a genuinely new query settles, go back to the
+  // top so the first row of the new answer is the first thing they see.
+  const listRef = useRef<SectionList<Soul, CemeterySection>>(null);
+  const settledKey = `${activeLat},${activeLon},${radiusKm}`;
+  // Seeded with the first key so the initial load doesn't scroll a list that
+  // is already at the top.
+  const lastSettledKey = useRef(settledKey);
+  useEffect(() => {
+    if (isPlaceholderData || !souls) return;
+    if (lastSettledKey.current === settledKey) return;
+    lastSettledKey.current = settledKey;
+    if (visibleSections.length === 0 || visibleSections[0].data.length === 0)
+      return;
+    try {
+      listRef.current?.scrollToLocation({
+        sectionIndex: 0,
+        itemIndex: 0,
+        animated: false,
+        viewOffset: 0,
+      });
+    } catch {
+      // scrollToLocation throws if the list unmounted mid-frame — nothing to do
+    }
+  }, [isPlaceholderData, souls, settledKey, visibleSections]);
 
   // ── collapsible sheet ──────────────────────────────────────────────────────
   // The map fills the screen; the sheet is an overlay translated by `shift`
@@ -243,18 +321,61 @@ export default function Discover() {
   // list is describing — 5 mi reads tight, 90 mi reads wide. Everything in the
   // list is inside this box by definition, nearest included. Walk-up mode opts
   // out: there the camera belongs on the chosen cemetery.
-  const mapBounds = useMemo((): [number, number, number, number] | undefined => {
+  //
+  // Except when the nearest-NEARBY_LIMIT cap bites: in a dense city the whole
+  // result set fits in a few square miles, so a radius-sized box zooms so far
+  // out that every pin stacks under the user dot. There, frame the results.
+  const mapBounds = useMemo(():
+    [number, number, number, number] | undefined => {
     if (focusedSection) return undefined;
-    const latDelta = radiusKm / 111;
-    const lonDelta =
-      radiusKm / (111 * Math.max(0.2, Math.cos((activeLat * Math.PI) / 180)));
+
+    const cosLat = Math.max(0.2, Math.cos((activeLat * Math.PI) / 180));
+    const radiusBox = (): [number, number, number, number] => {
+      const latDelta = radiusKm / 111;
+      const lonDelta = radiusKm / (111 * cosLat);
+      return [
+        activeLon - lonDelta,
+        activeLat - latDelta,
+        activeLon + lonDelta,
+        activeLat + latDelta,
+      ];
+    };
+
+    if (!capped) return radiusBox();
+
+    const coords = sections
+      .map((s) => s.coord)
+      .filter((c): c is [number, number] => c !== null);
+    if (coords.length === 0) return radiusBox();
+
+    // "You" belongs in the box too, or the dot walks off screen.
+    let minLat = activeLat;
+    let maxLat = activeLat;
+    let minLon = activeLon;
+    let maxLon = activeLon;
+    for (const [lat, lon] of coords) {
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+    }
+
+    // Pad by 15% of the span so pins don't sit on the frame edge, and floor the
+    // half-span at ~1.3 km so a single stacked cluster gets a sane zoom instead
+    // of a degenerate zero-size box.
+    const minHalfLat = 0.012;
+    const minHalfLon = minHalfLat / cosLat;
+    const halfLat = Math.max(minHalfLat, ((maxLat - minLat) / 2) * 1.3);
+    const halfLon = Math.max(minHalfLon, ((maxLon - minLon) / 2) * 1.3);
+    const midLat = (minLat + maxLat) / 2;
+    const midLon = (minLon + maxLon) / 2;
     return [
-      activeLon - lonDelta,
-      activeLat - latDelta,
-      activeLon + lonDelta,
-      activeLat + latDelta,
+      midLon - halfLon,
+      midLat - halfLat,
+      midLon + halfLon,
+      midLat + halfLat,
     ];
-  }, [focusedSection, radiusKm, activeLat, activeLon]);
+  }, [focusedSection, radiusKm, activeLat, activeLon, sections, capped]);
 
   return (
     <View className="bg-bg flex-1">
@@ -395,7 +516,9 @@ export default function Discover() {
                         flex: 1,
                         height: 34,
                         borderWidth: 1,
-                        borderColor: active ? "#ffffff" : "rgba(255,255,255,0.40)",
+                        borderColor: active
+                          ? "#ffffff"
+                          : "rgba(255,255,255,0.40)",
                         backgroundColor: active
                           ? "#ffffff"
                           : "rgba(255,255,255,0.14)",
@@ -425,6 +548,10 @@ export default function Discover() {
                     "Consulting the records…"
                   ) : isError ? (
                     "Query failed — pick a radius to retry."
+                  ) : showRefreshing ? (
+                    // stale results are still on screen for a new key — say so
+                    // rather than letting the old count read as the answer
+                    "Consulting the records…"
                   ) : (
                     // the count and where you are carry the meaning; the
                     // connective words stay dim so they don't compete
@@ -432,7 +559,9 @@ export default function Discover() {
                       <Text className="font-sans-semibold text-ink">
                         {total}
                       </Text>
-                      {` notable souls within ${formatRadius(radius, unit)} · `}
+                      {capped
+                        ? " nearest souls · "
+                        : ` notable souls within ${formatRadius(radius, unit)} · `}
                       <Text className="font-sans-semibold text-ink">
                         {placeLabel}
                       </Text>
@@ -492,75 +621,114 @@ export default function Discover() {
               </Text>
             </View>
           ) : (
-            <SectionList
-              sections={visibleSections}
-              keyExtractor={(item) => item.qid}
-              renderItem={({ item }) => <SoulCard soul={item} />}
-              renderSectionHeader={({ section }) =>
-                focusedSection ? null : (
-                  <View className="bg-bg flex-row items-center justify-between border-b border-line px-5 py-2.5">
-                    {/* long names truncate; the distance and count never do */}
-                    <View
-                      className="mr-5 flex-1 flex-row items-center"
-                      style={{ minWidth: 0 }}
-                    >
+            <View style={{ flex: 1 }}>
+              {/* dim + lock the stale list while the new one loads, so nobody
+                  taps a row that's about to be replaced */}
+              <View
+                style={{ flex: 1, opacity: showRefreshing ? 0.3 : 1 }}
+                pointerEvents={showRefreshing ? "none" : "auto"}
+              >
+                <SectionList
+                  ref={listRef}
+                  sections={visibleSections}
+                  keyExtractor={(item) => item.qid}
+                  renderItem={({ item }) => <SoulCard soul={item} />}
+                  renderSectionHeader={({ section }) =>
+                    focusedSection ? null : (
+                      <View className="bg-bg flex-row items-center justify-between border-b border-line px-5 py-2.5">
+                        {/* long names truncate; the distance and count never do */}
+                        <View
+                          className="mr-5 flex-1 flex-row items-center"
+                          style={{ minWidth: 0 }}
+                        >
+                          <Text
+                            className="text-ink"
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                            style={{
+                              flexShrink: 1,
+                              // hard cap so a long name always leaves room for the
+                              // distance and count instead of crowding them
+                              maxWidth: "68%",
+                              fontFamily: "PlusJakartaSans_600SemiBold",
+                              fontSize: 11,
+                              letterSpacing: 1.5,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {section.title}
+                          </Text>
+                          <Text
+                            className="text-ink"
+                            numberOfLines={1}
+                            style={{
+                              flexShrink: 0,
+                              fontFamily: "PlusJakartaSans_600SemiBold",
+                              fontSize: 11,
+                              letterSpacing: 1.5,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {" · "}
+                            {formatDistance(section.dist, unit)}
+                          </Text>
+                        </View>
+                        <Text
+                          className="text-ink-faint"
+                          style={{
+                            fontFamily: "PlusJakartaSans_600SemiBold",
+                            fontSize: 11,
+                          }}
+                        >
+                          {section.data.length}
+                        </Text>
+                      </View>
+                    )
+                  }
+                  stickySectionHeadersEnabled
+                  // Rows are variable height (1-2 desc lines, 0-2 chip rows) and
+                  // ~150 of them virtualize across many small sticky sections.
+                  // Scrolling back up re-measures recycled rows and shifts the
+                  // viewport under the finger; anchoring to the first visible
+                  // item absorbs that, and the wider window renders enough
+                  // ahead/behind that fewer rows get re-measured at all. No
+                  // getItemLayout — the heights genuinely vary.
+                  maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+                  windowSize={21}
+                  initialNumToRender={12}
+                  maxToRenderPerBatch={12}
+                  contentContainerStyle={{ paddingBottom: 32 }}
+                  ListEmptyComponent={
+                    <View className="items-center px-8 pt-16">
                       <Text
-                        className="text-ink"
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        style={{
-                          flexShrink: 1,
-                          // hard cap so a long name always leaves room for the
-                          // distance and count instead of crowding them
-                          maxWidth: "68%",
-                          fontFamily: "PlusJakartaSans_600SemiBold",
-                          fontSize: 11,
-                          letterSpacing: 1.5,
-                          textTransform: "uppercase",
-                        }}
+                        className="font-sans text-ink-dim text-center"
+                        style={{ fontSize: 14 }}
                       >
-                        {section.title}
-                      </Text>
-                      <Text
-                        className="text-ink"
-                        numberOfLines={1}
-                        style={{
-                          flexShrink: 0,
-                          fontFamily: "PlusJakartaSans_600SemiBold",
-                          fontSize: 11,
-                          letterSpacing: 1.5,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {" · "}
-                        {formatDistance(section.dist, unit)}
+                        No notable burials in this radius. Try widening it.
                       </Text>
                     </View>
-                    <Text
-                      className="text-ink-faint"
-                      style={{
-                        fontFamily: "PlusJakartaSans_600SemiBold",
-                        fontSize: 11,
-                      }}
-                    >
-                      {section.data.length}
-                    </Text>
-                  </View>
-                )
-              }
-              stickySectionHeadersEnabled
-              contentContainerStyle={{ paddingBottom: 32 }}
-              ListEmptyComponent={
-                <View className="items-center px-8 pt-16">
+                  }
+                />
+              </View>
+              {showRefreshing ? (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    StyleSheet.absoluteFill,
+                    { alignItems: "center", paddingTop: 40 },
+                  ]}
+                  accessibilityLiveRegion="polite"
+                >
+                  <ActivityIndicator color="#ffffff" />
                   <Text
-                    className="font-sans text-ink-dim text-center"
-                    style={{ fontSize: 14 }}
+                    className="font-sans text-ink-dim mt-3"
+                    style={{ fontSize: 13 }}
                   >
-                    No notable burials in this radius. Try widening it.
+                    Consulting the records…
                   </Text>
                 </View>
-              }
-            />
+              ) : null}
+            </View>
           )}
         </Animated.View>
       </Animated.View>

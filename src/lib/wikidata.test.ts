@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import {
+  NEARBY_LIMIT,
+  buildQuery,
+  fetchNearbySouls,
   groupByCemetery,
   heroUrl,
   lifespan,
@@ -9,6 +13,23 @@ import {
   year,
   type Soul,
 } from "@/lib/wikidata";
+
+// vitest hoists vi.mock above the imports at transform time, so fetchWithTimeout
+// is already the mock by the time the module under test loads.
+vi.mock("@/lib/fetch-timeout", () => ({ fetchWithTimeout: vi.fn() }));
+
+const mockResponse = (bindings: Record<string, { value: string }>[]) =>
+  ({
+    ok: true,
+    status: 200,
+    json: async () => ({ results: { bindings } }),
+  }) as Response;
+
+// Shape of one SPARQL result row for a labeled person, distinct by qid.
+const binding = (qid: string) => ({
+  person: { value: `http://www.wikidata.org/entity/${qid}` },
+  personLabel: { value: `Person ${qid}` },
+});
 
 function soul(partial: Partial<Soul>): Soul {
   return {
@@ -113,5 +134,63 @@ describe("lifeYears", () => {
   it("ignores non-year parentheticals", () => {
     const s = soul({ desc: "Singer (of the band Heart)", dob: "1950-06-19", dod: "" });
     expect(lifeYears(s)).toEqual({ born: "1950", died: "" });
+  });
+});
+
+describe("fetchNearbySouls", () => {
+  beforeEach(() => vi.mocked(fetchWithTimeout).mockReset());
+
+  it("reports capped: false for a short result set", async () => {
+    vi.mocked(fetchWithTimeout).mockResolvedValue(
+      mockResponse([binding("Q1"), binding("Q2")]),
+    );
+
+    const { souls, capped } = await fetchNearbySouls(0, 0, 10);
+    expect(souls).toHaveLength(2);
+    expect(capped).toBe(false);
+  });
+
+  it("reports capped: false when raw rows over-count distinct people (multi-image OPTIONAL join)", async () => {
+    // 100 distinct QIDs, each appearing twice — e.g. two P18 images per person
+    // via the OPTIONAL join. 200 raw rows but only 100 people: not capped.
+    const rows = Array.from({ length: 100 }, (_, i) => binding(`Q${i}`)).flatMap(
+      (b) => [b, b],
+    );
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse(rows));
+
+    const { souls, capped } = await fetchNearbySouls(0, 0, 10);
+    expect(rows).toHaveLength(200);
+    expect(souls).toHaveLength(100);
+    expect(capped).toBe(false);
+  });
+
+  it("reports capped: true off distinct QIDs even when dedup/junk-filter shrinks the soul count", async () => {
+    // NEARBY_LIMIT distinct QIDs, one of them unlabeled junk (personLabel ===
+    // qid) and dropped after the loop — the cap must still read true because
+    // seen.size (counted before the junk filter) hits NEARBY_LIMIT.
+    const rows = Array.from({ length: NEARBY_LIMIT }, (_, i) => binding(`Q${i}`));
+    rows[0] = { ...rows[0], personLabel: { value: "Q0" } };
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse(rows));
+
+    const { souls, capped } = await fetchNearbySouls(0, 0, 10);
+    expect(souls).toHaveLength(NEARBY_LIMIT - 1);
+    expect(capped).toBe(true);
+  });
+});
+
+describe("NEARBY_LIMIT", () => {
+  it("is 150", () => {
+    expect(NEARBY_LIMIT).toBe(150);
+  });
+
+  it("is the LIMIT the nearest-first subquery actually uses", () => {
+    expect(buildQuery(48.8566, 2.3522, 145)).toContain("LIMIT 150");
+  });
+
+  it("groups the nearest-first subquery by person so the LIMIT counts distinct people", () => {
+    const query = buildQuery(48.8566, 2.3522, 145);
+    expect(query).toContain("GROUP BY ?person");
+    expect(query).toContain("(MIN(?d) AS ?dist)");
   });
 });
