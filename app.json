@@ -2,7 +2,7 @@
   "expo": {
     "name": "Nearly Departed",
     "slug": "nearly-departed-app",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "nearlydepartedapp",
@@ -10,11 +10,12 @@
     "ios": {
       "icon": "./assets/images/ios-icon.png",
       "bundleIdentifier": "com.miadugas.nearlydeparted",
+      "appleTeamId": "CJAFZA5NP9",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "27"
+      "buildNumber": "28"
     },
     "android": {
       "adaptiveIcon": {
