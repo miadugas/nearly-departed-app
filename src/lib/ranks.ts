@@ -1,9 +1,10 @@
-// Standing in the archive, earned by how many souls you've kept. The ladder
+// Standing in the archive, earned by how many souls you've visited — logged in
+// person at the grave. Saving is a bookmark and earns nothing here. The ladder
 // runs from idle curiosity to full Mythos scholarship — thresholds tighten
 // early (quick wins) and stretch late (something to chase for a long while).
 export type Rank = {
   title: string;
-  /** Saved-soul count at which this rank begins. */
+  /** Visited-soul count at which this rank begins. */
   at: number;
   /** One line of flavour, shown under the title. */
   blurb: string;

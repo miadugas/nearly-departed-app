@@ -26,12 +26,12 @@ The most interesting people nearby are already dead. Find the writers, outlaws, 
 ```
 Nearly Departed maps the notable dead buried near you — writers, outlaws, inventors, musicians, the famous and the forgotten — each with the story of a life, a block from yours.
 
-Tap "use my location" and the map fills with the remarkable people resting nearby. Or search anywhere: a city you're visiting, a cemetery you've wondered about, the town you grew up in. Every soul comes with a biography drawn from public records, so you don't just find a grave — you meet a neighbor.
+Tap "Continue" and the map fills with the remarkable people resting nearby. Or search anywhere: a city you're visiting, a cemetery you've wondered about, the town you grew up in. Every soul comes with a biography drawn from public records, so you don't just find a grave — you meet a neighbor.
 
 WHAT YOU GET
 • A discovery map of notable burials, near you or anywhere you search
 • Life stories, portraits, and dates pulled from Wikidata and Wikipedia
-• Save the souls you want to remember, and earn your standing in the archive
+• Save the souls you want to remember. Visit their graves in person to earn your standing in the archive
 • Directions to the cemetery via Apple Maps
 • Cemetourists: our field guide to visiting gravesites with respect
 
@@ -73,7 +73,7 @@ keywords are a metadata-rejection trigger.
 ```
 • Discovery — use your location or search a city; drag the results sheet down to see the full map
 • Distances — Settings (gear on your profile) toggles km/mi; defaults to your device's region
-• Your archive — set a display name and a ghoul, save souls, watch your rank climb
+• Your archive — set a display name and a ghoul, save souls, log visits at the grave (within half a mile), watch your rank climb
 • Sign-in — email codes arrive from Nearly Departed <signin@smallpartsstudio.com>; Sign in with Apple also works
 • Account deletion — Profile → Delete account removes everything
 ```

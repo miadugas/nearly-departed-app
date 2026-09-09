@@ -3,8 +3,7 @@ import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/icon-button";
-
-const PINK = "#ff6f87";
+import { ACCENT } from "@/lib/colors";
 
 // What a procession is, told once, before the feature exists. The point is to
 // establish the noun — a guided walk is "a procession" — so the eventual
@@ -34,7 +33,7 @@ function Step({
   return (
     <View className="flex-row items-start gap-4 py-3.5">
       <View style={{ width: 22, paddingTop: 2 }}>
-        <Feather name={icon} size={18} color={PINK} />
+        <Feather name={icon} size={18} color={ACCENT} />
       </View>
       <Text
         className="text-ink font-sans flex-1"

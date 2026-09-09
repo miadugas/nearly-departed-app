@@ -18,6 +18,9 @@ module.exports = {
         },
         glass: "rgba(255,255,255,0.08)",
         line: "rgba(255,255,255,0.14)",
+        // the icon's electric green — the one chromatic accent on the monochrome
+        // palette; everything that used to be pink points here.
+        accent: "#47ec51",
       },
       fontFamily: {
         // Clash Display — headlines

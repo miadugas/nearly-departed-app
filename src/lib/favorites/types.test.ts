@@ -36,4 +36,12 @@ describe("toFavorite", () => {
   it("intentionally drops dist (it's location-dependent and goes stale)", () => {
     expect("dist" in toFavorite(soul, 1000)).toBe(false);
   });
+
+  // Save and visit are two systems: saving from anywhere must never produce a
+  // visit stamp, because only visits earn rank credit.
+  it("produces an unvisited record", () => {
+    const fav = toFavorite(soul, 1000);
+
+    expect(fav.visitedAt ?? undefined).toBeUndefined();
+  });
 });

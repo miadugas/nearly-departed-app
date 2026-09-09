@@ -16,6 +16,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { LogBox } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { AuthProvider } from "@/lib/auth/context";
 import { AvatarProvider } from "@/lib/avatar/context";
@@ -56,8 +57,11 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
+  // expo-router's Stack does not mount a gesture root of its own, and RNGH
+  // gestures (the Saved row's swipe-to-remove) are inert without one.
   return (
-    <QueryClientProvider client={queryClient}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AvatarProvider>
           <FavoritesProvider>
@@ -75,7 +79,8 @@ export default function RootLayout() {
             </UnitsProvider>
           </FavoritesProvider>
         </AvatarProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

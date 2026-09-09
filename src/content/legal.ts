@@ -4,7 +4,7 @@
 export const PRIVACY_POLICY = `# Privacy Policy — Nearly Departed
 
 **Effective date:** June 18, 2026
-**Last updated:** August 17, 2026
+**Last updated:** September 8, 2026
 
 This Privacy Policy explains how **Nearly Departed** ("the App," "we," "us") handles information when you use it. The App is operated by Small Parts Studio, LLC based in Littleton, Colorado, USA. Contact: nearlydepartedapp@gmail.com.
 
@@ -24,7 +24,7 @@ If you tap "Continue," the App requests permission to access your device's locat
 - center the map, and
 - query public databases for notable people buried near that point.
 
-To do that, your coordinates are transmitted to the third-party services listed below (e.g. the Wikimedia Query Service) as part of the search request. We do not store your location. You can revoke location access at any time in your device Settings; the App still works if you instead search for a place manually.
+To do that, your coordinates are transmitted to the third-party services listed below (e.g. the Wikimedia Query Service) as part of the search request. We do not store your location. If you choose to mark a grave as visited while you are near it, the App records the **time** of that visit alongside the saved grave — not your coordinates. You can revoke location access at any time in your device Settings; the App still works if you instead search for a place manually.
 
 **2. Place searches.**
 When you use "search anywhere," the text you type (e.g. a city or cemetery name) is sent to our geocoding provider (Komoot/Photon) to convert it into coordinates. We do not store these searches.
@@ -33,7 +33,7 @@ When you use "search anywhere," the text you type (e.g. a city or cemetery name)
 When the App contacts a third-party service, that service automatically receives standard network information such as your **IP address** and device/user-agent details, governed by **that service's** privacy policy (linked below). We do not receive or retain this information.
 
 **4. Favorites and on-device data.**
-For guests, any graves you save and any display name you choose are stored locally on your device using the operating system's storage. If you sign in, your favorites, chosen avatar id, and chosen display name are also synced to Supabase, scoped to your account, and deleted when you delete the account. Guest favorites and display names are removed if you delete the App.
+For guests, any graves you save (including the time you marked one as visited) and any display name you choose are stored locally on your device using the operating system's storage. If you sign in, your favorites, chosen avatar id, and chosen display name are also synced to Supabase, scoped to your account, and deleted when you delete the account. Guest favorites and display names are removed if you delete the App.
 
 **5. Accounts (optional).**
 You can use the entire App as a guest, with no account. If you choose to sign in to identify yourself, the App offers passwordless **email** sign-in and **Sign in with Apple**. When you sign in:

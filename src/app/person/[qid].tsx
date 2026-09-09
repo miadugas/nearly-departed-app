@@ -13,14 +13,30 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { BackButton, IconButton } from "@/components/icon-button";
+import { HeadstoneIcon } from "@/components/icons-drawn";
+import { ACCENT } from "@/lib/colors";
 import { useFavorites } from "@/lib/favorites/context";
+import { haversineKm, VISIT_RADIUS_KM } from "@/lib/geo";
+import { useLocation } from "@/lib/location/context";
 import { useUnits } from "@/lib/units/context";
 import { formatDistance } from "@/lib/units/format";
 import { heroUrl, lifeYears, type Soul } from "@/lib/wikidata";
 import { fetchSummary } from "@/lib/wikipedia";
+
+// The page's secondary button recipe (same footprint as the primary CTA, glass
+// fill + 1px outline), matching the sign-in screen. Blur is invisible on this
+// background, so the fill is a literal alpha wash.
+const SECONDARY_SURFACE = {
+  backgroundColor: "rgba(255,255,255,0.12)",
+  borderWidth: 1,
+  borderColor: "rgba(255,255,255,0.30)",
+} as const;
 
 function Stat({
   label,
@@ -87,8 +103,18 @@ export default function PersonDetail() {
     }
   }
   const [expanded, setExpanded] = useState(false);
-  const { isFavorite, toggle } = useFavorites();
+  const insets = useSafeAreaInsets();
+  const { isFavorite, toggle, isVisited, markVisited } = useFavorites();
+  const loc = useLocation();
   const saved = soul ? isFavorite(soul.qid) : false;
+  const visited = soul ? isVisited(soul.qid) : false;
+  // Proximity is measured from the *device*, never from `soul.dist` — that one
+  // is relative to whatever place was searched, so it would happily let you log
+  // a visit to a grave you're reading about from another city.
+  const kmFromDevice =
+    soul?.coord && loc.status === "granted"
+      ? haversineKm([loc.lat, loc.lon], soul.coord)
+      : null;
 
   const summary = useQuery({
     queryKey: ["summary", soul?.qid ?? "none"],
@@ -118,10 +144,103 @@ export default function PersonDetail() {
     );
   };
 
+  // Four mutually exclusive states, resolved top-down so the earliest true one
+  // wins. Returns null when there's nothing honest to offer.
+  const renderVisitAction = () => {
+    // Already logged. A visit is a fact, not a toggle — nothing to undo here,
+    // so this is a badge that happens to share the button's footprint.
+    if (visited) {
+      return (
+        <View
+          className="mb-3 flex-row items-center justify-center rounded-full py-[18px]"
+          style={SECONDARY_SURFACE}
+          accessibilityRole="text"
+          accessibilityLabel="Visited"
+        >
+          <HeadstoneIcon size={18} color="#fff" />
+          <Text
+            className="text-ink font-sans-semibold ml-2"
+            style={{ fontSize: 16 }}
+          >
+            Visited
+          </Text>
+        </View>
+      );
+    }
+
+    // No coordinate means proximity can never be verified — offering the
+    // control at all would be a promise the app can't keep.
+    if (!soul.coord) return null;
+
+    if (loc.status !== "granted") {
+      return (
+        <Pressable
+          onPress={loc.request}
+          className="mb-3 flex-row items-center justify-center rounded-full py-[18px] active:opacity-85"
+          style={SECONDARY_SURFACE}
+          accessibilityRole="button"
+          accessibilityLabel="Turn on location to log a visit"
+        >
+          <Feather name="map-pin" size={17} color="#fff" />
+          <Text
+            className="text-ink font-sans-semibold ml-2"
+            style={{ fontSize: 16 }}
+          >
+            Turn on location to log a visit
+          </Text>
+        </Pressable>
+      );
+    }
+
+    // Unreachable given the two guards above; keeps the distance non-null.
+    if (kmFromDevice === null) return null;
+
+    if (kmFromDevice <= VISIT_RADIUS_KM) {
+      return (
+        <Pressable
+          onPress={() => markVisited(soul)}
+          className="mb-3 flex-row items-center justify-center rounded-full py-[18px] active:opacity-85"
+          style={SECONDARY_SURFACE}
+          accessibilityRole="button"
+          accessibilityLabel="Mark visited"
+        >
+          <Feather name="check" size={17} color="#fff" />
+          <Text
+            className="text-ink font-sans-semibold ml-2"
+            style={{ fontSize: 16 }}
+          >
+            Mark visited
+          </Text>
+        </Pressable>
+      );
+    }
+
+    const away = formatDistance(kmFromDevice, unit);
+    return (
+      <Pressable
+        disabled
+        className="mb-3 flex-row items-center justify-center rounded-full py-[18px]"
+        style={[SECONDARY_SURFACE, { opacity: 0.5 }]}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: true }}
+        accessibilityLabel={`Too far to log a visit, ${away} away`}
+      >
+        <Feather name="map-pin" size={17} color="#fff" />
+        <Text
+          className="text-ink font-sans-semibold ml-2"
+          style={{ fontSize: 16 }}
+        >
+          Visit to log · {away} away
+        </Text>
+      </Pressable>
+    );
+  };
+
   return (
     <View className="bg-bg flex-1">
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 120 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
         {/* hero */}
@@ -284,52 +403,58 @@ export default function PersonDetail() {
           <IconButton
             icon={
               <FontAwesome
-                name={saved ? "heart" : "heart-o"}
+                // outline = kept, filled = been there — same rule as the Saved list
+                name={visited ? "heart" : "heart-o"}
                 size={17}
-                color={saved ? "#FF6B81" : "#fff"}
+                color={saved ? ACCENT : "#fff"}
               />
             }
             onPress={() => toggle(soul)}
-            accessibilityLabel={saved ? "Remove from saved" : "Save"}
+            accessibilityLabel={
+              saved
+                ? visited
+                  ? "Remove from saved · visited"
+                  : "Remove from saved"
+                : "Save"
+            }
           />
         </View>
       </SafeAreaView>
 
-      {/* pinned CTA */}
-      <View className="absolute bottom-0 left-0 right-0">
-        <LinearGradient
-          colors={["rgba(5,5,5,0)", "rgba(5,5,5,0.85)", "#050505"]}
-          locations={[0, 0.4, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-        <SafeAreaView edges={["bottom"]}>
-          <View className="px-5 pb-2 pt-4">
-            <Pressable
-              onPress={openDirections}
-              className="active:opacity-90"
-              disabled={!soul.coord}
+      {/* CTA bar — in normal flow, not an overlay, so the end of the article is
+          never hidden on first paint. The cost is a fixed strip of screen the
+          content can't use; accepted, because a measured paddingBottom can only
+          fix the overlap *after* the bar has laid out and the reader has
+          already seen covered text. */}
+      <View
+        className="bg-bg border-t border-line px-6 pt-4"
+        style={{ paddingBottom: insets.bottom + 12 }}
+      >
+        {renderVisitAction()}
+        <Pressable
+          onPress={openDirections}
+          className="active:opacity-90"
+          disabled={!soul.coord}
+        >
+          <View
+            className="flex-row items-center justify-center rounded-full bg-ink py-[18px]"
+            style={{ opacity: soul.coord ? 1 : 0.5 }}
+          >
+            <Feather name="navigation" size={18} color="#0a0a0a" />
+            <Text
+              className="font-sans-semibold ml-2"
+              style={{ color: "#0a0a0a", fontSize: 16 }}
             >
-              <View
-                className="flex-row items-center justify-center rounded-full bg-ink py-[18px]"
-                style={{ opacity: soul.coord ? 1 : 0.5 }}
-              >
-                <Feather name="navigation" size={18} color="#0a0a0a" />
-                <Text
-                  className="font-sans-semibold ml-2"
-                  style={{ color: "#0a0a0a", fontSize: 16 }}
-                >
-                  Get directions
-                </Text>
-                <View
-                  className="absolute right-2 h-9 w-9 items-center justify-center rounded-full"
-                  style={{ backgroundColor: "rgba(10,10,10,0.07)" }}
-                >
-                  <Feather name="arrow-right" size={16} color="#0a0a0a" />
-                </View>
-              </View>
-            </Pressable>
+              Get directions
+            </Text>
+            <View
+              className="absolute right-2 h-9 w-9 items-center justify-center rounded-full"
+              style={{ backgroundColor: "rgba(10,10,10,0.07)" }}
+            >
+              <Feather name="arrow-right" size={16} color="#0a0a0a" />
+            </View>
           </View>
-        </SafeAreaView>
+        </Pressable>
       </View>
     </View>
   );

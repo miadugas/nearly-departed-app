@@ -21,6 +21,7 @@ import type { Soul } from "@/lib/wikidata";
 import { LocalFavoritesRepository } from "./local-repository";
 import {
   toFavorite,
+  visitStampOf,
   type FavoriteSoul,
   type FavoritesRepository,
 } from "./types";
@@ -30,11 +31,18 @@ import {
 // push on change). The repository itself stays network-free.
 const repository: FavoritesRepository = new LocalFavoritesRepository();
 
+// Two systems over one record: saving is a bookmark you can make from
+// anywhere, visiting is proximity-verified at the grave (the person page gates
+// it on device location) and is what earns rank credit. Visiting implies
+// saving; unsaving forfeits the visit stamp with the rest of the record.
 type FavoritesContextValue = {
   favorites: FavoriteSoul[];
   isFavorite: (qid: string) => boolean;
+  isVisited: (qid: string) => boolean;
   toggle: (soul: Soul) => void;
+  markVisited: (soul: Soul) => void;
   remove: (qid: string) => void;
+  visitedCount: number;
   isReady: boolean; // false until the first load from storage completes
 };
 
@@ -89,21 +97,41 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       try {
         const local = await repository.list();
         const remote = await fetchFavorites(userId);
-        const { toInsertLocally, toPushRemotely } = mergeFavorites(
-          local,
-          remote,
-        );
+        const { toInsertLocally, toUpdateLocally, toPushRemotely } =
+          mergeFavorites(local, remote);
 
         for (const fav of toInsertLocally) {
           await repository.add(fav);
         }
-        if (active && toInsertLocally.length > 0) {
+        // Rows this device already has, but where the account carried a visit
+        // stamp it lacked. `add` upserts by qid, so this rewrites in place.
+        for (const fav of toUpdateLocally) {
+          await repository.add(fav);
+        }
+        if (
+          active &&
+          (toInsertLocally.length > 0 || toUpdateLocally.length > 0)
+        ) {
           // Merge into memory additively — never drop a row the user may have
           // toggled during the await gap.
           setFavorites((current) => {
             const have = new Set(current.map((f) => f.qid));
             const added = toInsertLocally.filter((f) => !have.has(f.qid));
-            return added.length > 0 ? [...added, ...current] : current;
+            const stamps = new Map(
+              toUpdateLocally.map((f) => [f.qid, f.visitedAt]),
+            );
+            // Patch only the visit stamp onto whatever is in memory now: the
+            // user may have re-saved during the await, and their payload is
+            // fresher than the snapshot this reconcile started from.
+            const patched =
+              stamps.size === 0
+                ? current
+                : current.map((f) =>
+                    stamps.has(f.qid)
+                      ? { ...f, visitedAt: stamps.get(f.qid) }
+                      : f,
+                  );
+            return added.length > 0 ? [...added, ...patched] : patched;
           });
         }
         for (const fav of toPushRemotely) {
@@ -126,6 +154,19 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     [favorites],
   );
 
+  const isVisited = useCallback(
+    (qid: string) =>
+      favorites.some(
+        (f) => f.qid === qid && visitStampOf(f) !== undefined,
+      ),
+    [favorites],
+  );
+
+  const visitedCount = useMemo(
+    () => favorites.filter((f) => visitStampOf(f) !== undefined).length,
+    [favorites],
+  );
+
   const toggle = useCallback((soul: Soul) => {
     setFavorites((current) => {
       const uid = userIdRef.current;
@@ -141,6 +182,27 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Proximity-verified visit. Saves first if needed, then stamps — the stamp
+  // is only ever written once, because a re-visit isn't a new fact.
+  const markVisited = useCallback((soul: Soul) => {
+    setFavorites((current) => {
+      const uid = userIdRef.current;
+      const existing = current.find((f) => f.qid === soul.qid);
+      if (existing && visitStampOf(existing) !== undefined) return current;
+
+      const now = Date.now();
+      const fav: FavoriteSoul = existing
+        ? { ...existing, visitedAt: now }
+        : { ...toFavorite(soul, now), visitedAt: now };
+      // `add` upserts by qid, so the save path and the stamp path are one call.
+      void repository.add(fav);
+      if (uid) pushFavorite(uid, fav).catch(() => {});
+      return existing
+        ? current.map((f) => (f.qid === soul.qid ? fav : f))
+        : [fav, ...current];
+    });
+  }, []);
+
   const remove = useCallback((qid: string) => {
     setFavorites((current) => {
       const uid = userIdRef.current;
@@ -151,8 +213,26 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ favorites, isFavorite, toggle, remove, isReady }),
-    [favorites, isFavorite, toggle, remove, isReady],
+    () => ({
+      favorites,
+      isFavorite,
+      isVisited,
+      toggle,
+      markVisited,
+      remove,
+      visitedCount,
+      isReady,
+    }),
+    [
+      favorites,
+      isFavorite,
+      isVisited,
+      toggle,
+      markVisited,
+      remove,
+      visitedCount,
+      isReady,
+    ],
   );
 
   return (

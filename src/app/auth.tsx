@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackButton } from "@/components/icon-button";
 import { useAuth } from "@/lib/auth/context";
+import { ACCENT } from "@/lib/colors";
 import { friendlyAuthMessage } from "@/lib/auth/messages";
 
 // Two real options: Sign in with Apple (native) and passwordless email code,
@@ -391,7 +392,7 @@ export default function Auth() {
               <Text
                 className="font-sans text-center"
                 style={{
-                  color: "#FF6B81",
+                  color: ACCENT,
                   fontSize: 13,
                   lineHeight: 18,
                   marginTop: 14,

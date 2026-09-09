@@ -5,11 +5,10 @@ import { useEffect, useState } from "react";
 import { Animated, Linking, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { YOU_BLUE } from "@/lib/colors";
+import { ACCENT, YOU_BLUE } from "@/lib/colors";
 import { useLocation } from "@/lib/location/context";
 import { emitTabReselect } from "@/lib/tab-signal";
 
-const PINK = "#ff6f87";
 const IDLE = "rgba(255,255,255,0.55)";
 
 /** Bar height above the home indicator. Screens reserve this much space. */
@@ -112,7 +111,7 @@ export function TabBar() {
         const active = pathname === tab.href;
         const isLocation = tab.href === "/explore";
         const asking = isLocation && wantsLocation;
-        const color = asking ? YOU_BLUE : active ? PINK : IDLE;
+        const color = asking ? YOU_BLUE : active ? ACCENT : IDLE;
         const label = isLocation
           ? wantsLocation
             ? "Continue"

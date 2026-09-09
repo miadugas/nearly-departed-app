@@ -100,8 +100,112 @@ describe("mergeFavorites", () => {
     expect(mergeFavorites([], [])).toEqual({
       merged: [],
       toInsertLocally: [],
+      toUpdateLocally: [],
       toPushRemotely: [],
     });
+  });
+});
+
+// A visit is a fact — proximity-verified, and the only thing that earns rank
+// credit — so it has to survive a round trip through any device.
+describe("mergeFavorites visit stamps", () => {
+  it("adopts a remote visit this device never had", () => {
+    const local = [fav("Q1", { savedAt: 100 })];
+    const remote = [fav("Q1", { savedAt: 100, visitedAt: 500 })];
+
+    const { merged, toUpdateLocally, toPushRemotely } = mergeFavorites(
+      local,
+      remote,
+    );
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0].visitedAt).toBe(500);
+    expect(toUpdateLocally.map((f) => f.qid)).toEqual(["Q1"]);
+    expect(toUpdateLocally[0].visitedAt).toBe(500);
+    expect(toPushRemotely).toEqual([]);
+  });
+
+  it("pushes a local visit the account never had", () => {
+    const local = [fav("Q1", { savedAt: 100, visitedAt: 500 })];
+    const remote = [fav("Q1", { savedAt: 100 })];
+
+    const { merged, toUpdateLocally, toPushRemotely } = mergeFavorites(
+      local,
+      remote,
+    );
+
+    expect(merged[0].visitedAt).toBe(500);
+    expect(toUpdateLocally).toEqual([]);
+    expect(toPushRemotely.map((f) => f.qid)).toEqual(["Q1"]);
+    expect(toPushRemotely[0].visitedAt).toBe(500);
+  });
+
+  it("keeps the earliest stamp and updates the local side when it is later", () => {
+    const local = [fav("Q1", { visitedAt: 900 })];
+    const remote = [fav("Q1", { visitedAt: 400 })];
+
+    const { merged, toUpdateLocally, toPushRemotely } = mergeFavorites(
+      local,
+      remote,
+    );
+
+    expect(merged[0].visitedAt).toBe(400);
+    expect(toUpdateLocally.map((f) => f.visitedAt)).toEqual([400]);
+    expect(toPushRemotely).toEqual([]);
+  });
+
+  it("keeps the earliest stamp and pushes when the remote side is later", () => {
+    const local = [fav("Q1", { visitedAt: 400 })];
+    const remote = [fav("Q1", { visitedAt: 900 })];
+
+    const { merged, toUpdateLocally, toPushRemotely } = mergeFavorites(
+      local,
+      remote,
+    );
+
+    expect(merged[0].visitedAt).toBe(400);
+    expect(toUpdateLocally).toEqual([]);
+    expect(toPushRemotely.map((f) => f.visitedAt)).toEqual([400]);
+  });
+
+  it("changes nothing when neither side was visited", () => {
+    const local = [fav("Q1", { label: "Local Ada" })];
+    const remote = [fav("Q1", { label: "Remote Ada" })];
+
+    const { merged, toInsertLocally, toUpdateLocally, toPushRemotely } =
+      mergeFavorites(local, remote);
+
+    expect(merged).toEqual([local[0]]);
+    expect(merged[0].label).toBe("Local Ada");
+    expect(toInsertLocally).toEqual([]);
+    expect(toUpdateLocally).toEqual([]);
+    expect(toPushRemotely).toEqual([]);
+  });
+
+  // `visitedAt` crosses a jsonb/JSON boundary written by any client version;
+  // a null or junk value must read as "not visited", never overwrite a real one.
+  it("treats a null or non-finite stamp as unvisited", () => {
+    const local = [fav("Q1", { visitedAt: null })];
+    const remote = [fav("Q1", { visitedAt: "500" as never })];
+
+    const { merged, toUpdateLocally, toPushRemotely } = mergeFavorites(
+      local,
+      remote,
+    );
+
+    expect(merged[0].visitedAt).toBeNull();
+    expect(toUpdateLocally).toEqual([]);
+    expect(toPushRemotely).toEqual([]);
+  });
+
+  it("carries a remote-only row's visit stamp into the local insert", () => {
+    const { toInsertLocally, toUpdateLocally } = mergeFavorites(
+      [],
+      [fav("Q9", { visitedAt: 700 })],
+    );
+
+    expect(toInsertLocally.map((f) => f.visitedAt)).toEqual([700]);
+    expect(toUpdateLocally).toEqual([]);
   });
 });
 

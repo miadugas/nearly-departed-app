@@ -28,11 +28,11 @@ import {
 import { useAuth } from "@/lib/auth/context";
 import { avatarSource } from "@/lib/avatar/avatars";
 import { useAvatar } from "@/lib/avatar/context";
+import { ACCENT } from "@/lib/colors";
 import { useFavorites } from "@/lib/favorites/context";
 import { progressToNext, rankFor } from "@/lib/ranks";
 
 const APP_VERSION = Constants.expoConfig?.version ?? "1.0.0";
-const PINK = "#ff6f87";
 
 // Menu destination: icon, title, one line of what is behind it, chevron.
 function MenuRow({
@@ -84,7 +84,7 @@ function AccountAction({
   busy?: boolean;
   onPress: () => void;
 }) {
-  const tint = destructive ? PINK : "#ffffff";
+  const tint = destructive ? ACCENT : "#ffffff";
   return (
     <Pressable
       onPress={onPress}
@@ -110,7 +110,7 @@ function AccountAction({
 
 export default function Profile() {
   const insets = useSafeAreaInsets();
-  const { favorites, isReady } = useFavorites();
+  const { favorites, visitedCount, isReady } = useFavorites();
   const { user, signOut, deleteAccount } = useAuth();
   const { avatarId, setAvatarId, displayName, setDisplayName } = useAvatar();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -121,9 +121,12 @@ export default function Profile() {
   const email = user?.email ?? "";
   const name = displayName ?? (signedIn ? email.split("@")[0] : "Guest");
   const avatarInitial = (name || "?").trim().charAt(0).toUpperCase();
-  const count = favorites.length;
-  const rank = rankFor(count);
-  const progress = progressToNext(count);
+  // Rank is earned by visits only — a save is a bookmark and carries no
+  // credit, so the saved count is shown but never fed to the ladder.
+  const visited = visitedCount;
+  const saved = favorites.length;
+  const rank = rankFor(visited);
+  const progress = progressToNext(visited);
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -186,7 +189,7 @@ export default function Profile() {
               <Text
                 className="font-serif mt-5"
                 style={{
-                  color: PINK,
+                  color: ACCENT,
                   fontSize: 46,
                   lineHeight: 47,
                   letterSpacing: -1,
@@ -281,12 +284,12 @@ export default function Profile() {
                   {email}
                 </Text>
               ) : null}
-              {/* rank — standing in the archive, earned by saved souls */}
+              {/* rank — standing in the archive, earned by visited souls */}
               <View className="mt-3 flex-row items-center gap-2">
-                <Feather name="award" size={15} color={PINK} />
+                <Feather name="award" size={15} color={ACCENT} />
                 <Text
                   className="font-serif"
-                  style={{ color: PINK, fontSize: 22, lineHeight: 24 }}
+                  style={{ color: ACCENT, fontSize: 22, lineHeight: 24 }}
                   numberOfLines={1}
                 >
                   {rank.title}
@@ -314,7 +317,8 @@ export default function Profile() {
             style={{ height: 1, backgroundColor: "rgba(255,255,255,0.16)" }}
           />
 
-          {/* saved souls — the count is the hero, the art keeps it company */}
+          {/* visited souls — the count is the hero, the art keeps it company;
+              saves ride underneath as a secondary line */}
           <View className="mt-9">
             <Text
               className="text-ink-faint font-sans-semibold"
@@ -324,7 +328,7 @@ export default function Profile() {
                 textTransform: "uppercase",
               }}
             >
-              Saved souls
+              Visited souls
             </Text>
             <View className="flex-row items-start justify-between">
               <View style={{ flex: 1 }}>
@@ -332,22 +336,30 @@ export default function Profile() {
                   className="text-ink font-serif mt-3"
                   style={{ fontSize: 104, lineHeight: 98 }}
                 >
-                  {isReady ? count : "—"}
+                  {isReady ? visited : "—"}
+                </Text>
+                <Text
+                  className="text-ink-faint font-sans mt-1.5"
+                  style={{ fontSize: 12 }}
+                >
+                  {/* a space, not "", while loading — an empty Text collapses to
+                      zero height and the link below would jump on hydrate */}
+                  {isReady ? `${saved} saved` : " "}
                 </Text>
                 <Pressable
                   onPress={() => router.push("/saved")}
                   accessibilityRole="button"
                   accessibilityLabel="View saved souls"
                   hitSlop={8}
-                  className="mt-7 flex-row items-center gap-3 self-start active:opacity-70"
+                  className="mt-5 flex-row items-center gap-3 self-start active:opacity-70"
                 >
                   <Text
                     className="font-sans"
-                    style={{ color: PINK, fontSize: 18 }}
+                    style={{ color: ACCENT, fontSize: 18 }}
                   >
                     View saved souls
                   </Text>
-                  <Feather name="chevron-right" size={20} color={PINK} />
+                  <Feather name="chevron-right" size={20} color={ACCENT} />
                 </Pressable>
               </View>
               <Image
@@ -359,7 +371,7 @@ export default function Profile() {
               />
             </View>
 
-            {isReady && count === 0 ? (
+            {isReady && saved === 0 ? (
               <View className="mt-4 items-center px-4">
                 <Text
                   className="font-sans text-center"
@@ -392,23 +404,13 @@ export default function Profile() {
               onPress={() => router.push("/cemetourists")}
             />
             <MenuRow
-              icon={<ReaperIcon size={22} color={PINK} />}
+              icon={<ReaperIcon size={22} color={ACCENT} />}
               title="Processions"
               description="Guided cemetery walks. Coming soon."
               onPress={() => router.push("/processions")}
             />
-            <MenuRow
-              icon={
-                <Feather
-                  name="heart"
-                  size={22}
-                  color="rgba(255,255,255,0.85)"
-                />
-              }
-              title="Saved souls"
-              description="View and manage your archive."
-              onPress={() => router.push("/saved")}
-            />
+            {/* No "Saved souls" row here — the archive already has a link
+                under the counts above; two routes to one screen read as a bug. */}
             <MenuRow
               icon={
                 <Feather

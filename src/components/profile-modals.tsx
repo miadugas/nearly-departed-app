@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AVATARS, type AvatarId } from "@/lib/avatar/avatars";
+import { ACCENT } from "@/lib/colors";
 import { checkDisplayName } from "@/lib/name-policy";
 import { sanitizeDisplayName } from "@/lib/sync/merge";
 
@@ -41,7 +42,7 @@ function AvatarCell({
           alignItems: "center",
           justifyContent: "center",
           borderWidth: selected ? 2 : 0,
-          borderColor: "#FF6B81",
+          borderColor: ACCENT,
         }}
       >
         <View
@@ -245,7 +246,7 @@ export function NameEditorModal({
               style={{
                 backgroundColor: "rgba(255,255,255,0.10)",
                 borderWidth: 1,
-                borderColor: error ? "#ff6f87" : "rgba(255,255,255,0.26)",
+                borderColor: error ? ACCENT : "rgba(255,255,255,0.26)",
                 color: "#fff",
                 fontFamily: "PlusJakartaSans_400Regular",
                 fontSize: 16,
@@ -255,7 +256,7 @@ export function NameEditorModal({
               <Text
                 accessibilityLiveRegion="polite"
                 className="font-sans px-6 pt-2"
-                style={{ color: "#ff6f87", fontSize: 13, lineHeight: 18 }}
+                style={{ color: ACCENT, fontSize: 13, lineHeight: 18 }}
               >
                 {error}
               </Text>
