@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Animated, Easing, Image, StyleSheet, Text } from "react-native";
 
+import { ACCENT } from "@/lib/colors";
+
 /**
  * Cold-start / post-sign-in wait. The artwork's ground is exactly the `bg`
  * token, so `contain` letterboxes into an identical field — no seam, no crop
@@ -42,7 +44,7 @@ export function LoadingScreen({
         accessibilityLabel="Nearly Departed"
       />
       <Text
-        className="font-sans text-ink-faint"
+        className="font-sans"
         style={{
           position: "absolute",
           // just below the wordmark, which sits at ~63% of the artwork's height
@@ -51,6 +53,7 @@ export function LoadingScreen({
           right: 0,
           textAlign: "center",
           fontSize: 13.5,
+          color: ACCENT,
         }}
       >
         {message}
