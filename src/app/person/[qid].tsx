@@ -22,6 +22,7 @@ import { BackButton, IconButton } from "@/components/icon-button";
 import { HeadstoneIcon } from "@/components/icons-drawn";
 import { ACCENT } from "@/lib/colors";
 import { useFavorites } from "@/lib/favorites/context";
+import { placeKindOfFav } from "@/lib/favorites/types";
 import { haversineKm, VISIT_RADIUS_KM } from "@/lib/geo";
 import { useLocation } from "@/lib/location/context";
 import { useUnits } from "@/lib/units/context";
@@ -96,7 +97,14 @@ export default function PersonDetail() {
     try {
       const parsed = JSON.parse(data);
       if (parsed && typeof parsed.qid === "string") {
-        soul = { ...parsed, occs: Array.isArray(parsed.occs) ? parsed.occs : [] };
+        soul = {
+          ...parsed,
+          occs: Array.isArray(parsed.occs) ? parsed.occs : [],
+          // Favorites saved before 1.0.6 and old deep links lack both fields.
+          placeKind: placeKindOfFav(parsed),
+          otherPlace:
+            typeof parsed.otherPlace === "string" ? parsed.otherPlace : null,
+        };
       }
     } catch {
       soul = null;
@@ -147,6 +155,10 @@ export default function PersonDetail() {
   // Four mutually exclusive states, resolved top-down so the earliest true one
   // wins. Returns null when there's nothing honest to offer.
   const renderVisitAction = () => {
+    // Visits are grave visits (they feed ranks and the procession flywheel);
+    // a death place is not a grave — plan decision 2.
+    if (soul.placeKind === "death") return null;
+
     // Already logged. A visit is a fact, not a toggle — nothing to undo here,
     // so this is a badge that happens to share the button's footprint.
     if (visited) {
@@ -290,7 +302,9 @@ export default function PersonDetail() {
                   textTransform: "uppercase",
                 }}
               >
-                {hasDist ? `${formatDistance(soul.dist, unit)} from you` : soul.place}
+                {hasDist
+                  ? `${formatDistance(soul.dist, unit)} from you`
+                  : soul.place}
               </Text>
             </View>
             <Text
@@ -320,7 +334,18 @@ export default function PersonDetail() {
               <Stat label="Died" value={lifeYears(soul).died || "?"} noRight />
             </View>
             <View className="flex-row">
-              <Stat label="Resting at" value={soul.place} small />
+              <Stat
+                label={soul.placeKind === "death" ? "Died at" : "Resting at"}
+                value={soul.place}
+                sub={
+                  soul.otherPlace
+                    ? soul.placeKind === "death"
+                      ? `Buried at ${soul.otherPlace}`
+                      : `Died at ${soul.otherPlace}`
+                    : undefined
+                }
+                small
+              />
               <Stat
                 label="Distance"
                 value={hasDist ? formatDistance(soul.dist, unit) : "—"}
@@ -328,6 +353,27 @@ export default function PersonDetail() {
               />
             </View>
           </View>
+
+          <Pressable
+            onPress={() =>
+              Linking.openURL(`https://www.wikidata.org/wiki/${soul.qid}`)
+            }
+            accessibilityRole="link"
+            className="mt-3 flex-row items-center gap-2 self-start active:opacity-70"
+            style={{ minHeight: 44 }}
+          >
+            <Feather
+              name="external-link"
+              size={13}
+              color="rgba(255,255,255,0.55)"
+            />
+            <Text
+              className="font-sans-medium text-ink-dim"
+              style={{ fontSize: 13 }}
+            >
+              Improve this record on Wikidata
+            </Text>
+          </Pressable>
 
           {/* the life */}
           <Text

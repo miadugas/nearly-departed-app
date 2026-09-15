@@ -23,7 +23,7 @@ export function SoulsMap({ sections }: Props) {
     <View className="bg-panel flex-1 items-center justify-center">
       <Feather name="map" size={26} color="rgba(255,255,255,0.25)" />
       <Text className="font-sans text-ink-faint mt-3" style={{ fontSize: 12 }}>
-        Map renders in the native app ({sections.length} cemeteries nearby)
+        Map renders in the native app ({sections.length} places nearby)
       </Text>
     </View>
   );

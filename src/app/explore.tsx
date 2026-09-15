@@ -1,6 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { DiscoveryControls } from "@/components/discovery-controls";
 import { PlaceSearch } from "@/components/place-search";
 import { SoulCard } from "@/components/soul-card";
 import { SoulsMap } from "@/components/souls-map";
@@ -35,6 +36,7 @@ import {
 import {
   type CemeterySection,
   type Soul,
+  type SoulMode,
   groupByCemetery,
 } from "@/lib/wikidata";
 
@@ -109,12 +111,15 @@ export default function Discover() {
   const activeLat = place?.lat ?? loc.lat;
   const activeLon = place?.lon ?? loc.lon;
 
-  const {
-    data,
-    isLoading,
-    isError,
-    isPlaceholderData,
-  } = useNearbySouls(activeLat, activeLon, radiusKm);
+  // buried vs died — session state, not persisted (see plan decision 1)
+  const [mode, setMode] = useState<SoulMode>("buried");
+
+  const { data, isLoading, isError, isPlaceholderData } = useNearbySouls(
+    activeLat,
+    activeLon,
+    radiusKm,
+    mode,
+  );
   const souls = data?.souls;
   // keepPreviousData hands back the *previous* list under a new lat/lon/radius
   // key, so this is exactly "you're looking at results for the old query".
@@ -139,18 +144,15 @@ export default function Discover() {
     locate !== "0" &&
     (!minHeld || locStatus === "loading" || (isLoading && !souls));
   const total = souls?.length ?? 0;
-  // The query takes the nearest NEARBY_LIMIT burials, not everything in radius.
-  // Hitting the cap means the results describe a much smaller area than the
-  // chosen radius — in Paris at 90 mi all 150 rows are inside the city — so the
-  // header and the map both have to stop talking about the radius.
-  const capped = data?.capped ?? false;
+  // the picked place now lives in the search field itself — the status row
+  // only names a location when there isn't one visibly selected above it
   const placeLabel = place
-    ? `near ${place.label}`
+    ? null
     : loc.status === "granted"
       ? "near you"
       : "Denver (sample)";
 
-  // walk-up mode: tap a cemetery pin to focus the list on just that resting place
+  // walk-up mode: tap a pin to focus the list on just that place
   const [focused, setFocused] = useState<string | null>(null);
   const focusedSection = focused
     ? sections.find((s) => s.title === focused)
@@ -165,7 +167,7 @@ export default function Discover() {
   // as the list "jumping". Once a genuinely new query settles, go back to the
   // top so the first row of the new answer is the first thing they see.
   const listRef = useRef<SectionList<Soul, CemeterySection>>(null);
-  const settledKey = `${activeLat},${activeLon},${radiusKm}`;
+  const settledKey = `${activeLat},${activeLon},${radiusKm},${mode}`;
   // Seeded with the first key so the initial load doesn't scroll a list that
   // is already at the top.
   const lastSettledKey = useRef(settledKey);
@@ -321,10 +323,6 @@ export default function Discover() {
   // list is describing — 5 mi reads tight, 90 mi reads wide. Everything in the
   // list is inside this box by definition, nearest included. Walk-up mode opts
   // out: there the camera belongs on the chosen cemetery.
-  //
-  // Except when the nearest-NEARBY_LIMIT cap bites: in a dense city the whole
-  // result set fits in a few square miles, so a radius-sized box zooms so far
-  // out that every pin stacks under the user dot. There, frame the results.
   const mapBounds = useMemo(():
     [number, number, number, number] | undefined => {
     if (focusedSection) return undefined;
@@ -341,41 +339,8 @@ export default function Discover() {
       ];
     };
 
-    if (!capped) return radiusBox();
-
-    const coords = sections
-      .map((s) => s.coord)
-      .filter((c): c is [number, number] => c !== null);
-    if (coords.length === 0) return radiusBox();
-
-    // "You" belongs in the box too, or the dot walks off screen.
-    let minLat = activeLat;
-    let maxLat = activeLat;
-    let minLon = activeLon;
-    let maxLon = activeLon;
-    for (const [lat, lon] of coords) {
-      if (lat < minLat) minLat = lat;
-      if (lat > maxLat) maxLat = lat;
-      if (lon < minLon) minLon = lon;
-      if (lon > maxLon) maxLon = lon;
-    }
-
-    // Pad by 15% of the span so pins don't sit on the frame edge, and floor the
-    // half-span at ~1.3 km so a single stacked cluster gets a sane zoom instead
-    // of a degenerate zero-size box.
-    const minHalfLat = 0.012;
-    const minHalfLon = minHalfLat / cosLat;
-    const halfLat = Math.max(minHalfLat, ((maxLat - minLat) / 2) * 1.3);
-    const halfLon = Math.max(minHalfLon, ((maxLon - minLon) / 2) * 1.3);
-    const midLat = (minLat + maxLat) / 2;
-    const midLon = (minLon + maxLon) / 2;
-    return [
-      midLon - halfLon,
-      midLat - halfLat,
-      midLon + halfLon,
-      midLat + halfLat,
-    ];
-  }, [focusedSection, radiusKm, activeLat, activeLon, sections, capped]);
+    return radiusBox();
+  }, [focusedSection, radiusKm, activeLat, activeLon]);
 
   return (
     <View className="bg-bg flex-1">
@@ -454,7 +419,7 @@ export default function Discover() {
               <Pressable
                 onPress={() => setFocused(null)}
                 accessibilityRole="button"
-                accessibilityLabel="Back to all nearby cemeteries"
+                accessibilityLabel="Back to all nearby places"
                 // the only way out of walk-up mode, and the label is only 18pt
                 // tall — grow the target with slop so the layout doesn't shift
                 hitSlop={{ top: 14, bottom: 14, left: 22, right: 26 }}
@@ -483,8 +448,9 @@ export default function Discover() {
                 style={{ fontSize: 12 }}
               >
                 {focusedSection.data.length}{" "}
-                {focusedSection.data.length === 1 ? "soul" : "souls"} rest here
-                · {formatDistance(focusedSection.dist, unit)} away
+                {focusedSection.data.length === 1 ? "soul" : "souls"}{" "}
+                {mode === "died" ? "died here" : "rest here"}·{" "}
+                {formatDistance(focusedSection.dist, unit)} away
               </Text>
             </View>
           ) : (
@@ -496,47 +462,46 @@ export default function Discover() {
                 }}
                 // collapsed sheet + keyboard would bury the field — surface it
                 onFocus={() => settle(false)}
+                selected={place}
+                onClear={() => {
+                  setPlace(null);
+                  setFocused(null);
+                }}
               />
-              <View className="mt-3 flex-row items-center gap-2">
-                {RADII.map((r, slot) => {
-                  const active = slot === radiusSlot;
-                  return (
-                    <Pressable
-                      key={r}
-                      onPress={() => {
-                        Keyboard.dismiss();
-                        setRadiusSlot(slot);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${r} ${unit === "mi" ? "mile" : "kilometer"} radius`}
-                      accessibilityState={{ selected: active }}
-                      hitSlop={{ top: 8, bottom: 8 }}
-                      className="items-center justify-center rounded-full"
-                      style={{
-                        flex: 1,
-                        height: 34,
-                        borderWidth: 1,
-                        borderColor: active
-                          ? "#ffffff"
-                          : "rgba(255,255,255,0.40)",
-                        backgroundColor: active
-                          ? "#ffffff"
-                          : "rgba(255,255,255,0.14)",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "PlusJakartaSans_600SemiBold",
-                          fontSize: 12,
-                          color: active ? "#0a0a0a" : "rgba(255,255,255,0.7)",
-                        }}
-                      >
-                        {formatRadius(r, unit)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              <View className="mt-3">
+                <DiscoveryControls
+                  mode={mode}
+                  onModeChange={setMode}
+                  radiusSlot={radiusSlot}
+                  onRadiusChange={setRadiusSlot}
+                  radii={RADII}
+                  unit={unit}
+                />
               </View>
+              {mode === "died" ? (
+                <Pressable
+                  onPress={() => router.push("/died-here")}
+                  accessibilityRole="button"
+                  accessibilityLabel="How Died here works"
+                  className="flex-row items-center active:opacity-70"
+                  style={{ minHeight: 44, marginTop: 4 }}
+                >
+                  <Text
+                    className="font-sans text-ink-dim"
+                    style={{ fontSize: 12, flex: 1 }}
+                  >
+                    Only recorded death spots are shown ·{" "}
+                    <Text className="text-ink font-sans-semibold">
+                      How this works
+                    </Text>
+                  </Text>
+                  <Feather
+                    name="chevron-right"
+                    size={16}
+                    color="rgba(255,255,255,0.45)"
+                  />
+                </Pressable>
+              ) : null}
               <View className="mt-3 flex-row items-center justify-between">
                 <Text
                   className="font-sans text-ink-dim"
@@ -559,12 +524,15 @@ export default function Discover() {
                       <Text className="font-sans-semibold text-ink">
                         {total}
                       </Text>
-                      {capped
-                        ? " nearest souls · "
-                        : ` notable souls within ${formatRadius(radius, unit)} · `}
-                      <Text className="font-sans-semibold text-ink">
-                        {placeLabel}
-                      </Text>
+                      {` notable souls within ${formatRadius(radius, unit)}`}
+                      {placeLabel ? (
+                        <>
+                          {" · "}
+                          <Text className="font-sans-semibold text-ink">
+                            {placeLabel}
+                          </Text>
+                        </>
+                      ) : null}
                     </>
                   )}
                 </Text>
@@ -704,7 +672,9 @@ export default function Discover() {
                         className="font-sans text-ink-dim text-center"
                         style={{ fontSize: 14 }}
                       >
-                        No notable burials in this radius. Try widening it.
+                        {mode === "died"
+                          ? "No recorded death spots in this radius. Try widening it."
+                          : "No notable burials in this radius. Try widening it."}
                       </Text>
                     </View>
                   }

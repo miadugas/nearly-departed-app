@@ -30,6 +30,7 @@ Tap "Continue" and the map fills with the remarkable people resting nearby. Or s
 
 WHAT YOU GET
 • A discovery map of notable burials, near you or anywhere you search
+• Died here: flip the map to where notable people died — the hospital, the hotel, the battlefield — when Wikidata records the spot
 • Life stories, portraits, and dates pulled from Wikidata and Wikipedia
 • Save the souls you want to remember. Visit their graves in person to earn your standing in the archive
 • Directions to the cemetery via Apple Maps
@@ -72,8 +73,15 @@ keywords are a metadata-rejection trigger.
 
 ```
 • Discovery — use your location or search a city; drag the results sheet down to see the full map
+• Died here — tap the toggle above the radius chips; pins become hospitals, hotels, airports. Cities alone are filtered out (the note under the toggle explains)
 • Distances — Settings (gear on your profile) toggles km/mi; defaults to your device's region
 • Your archive — set a display name and a ghoul, save souls, log visits at the grave (within half a mile), watch your rank climb
 • Sign-in — email codes arrive from Nearly Departed <signin@smallpartsstudio.com>; Sign in with Apple also works
 • Account deletion — Profile → Delete account removes everything
+```
+
+## What's New (1.0.6)
+
+```
+Died here. A new toggle on the map flips from where notable people are buried to where they died — the hospital, the hotel, the battlefield. Only spots Wikidata actually records; "died in Denver" doesn't count. Every person page now links to their Wikidata record so you can add what's missing.
 ```

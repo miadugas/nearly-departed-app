@@ -3,12 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchWithTimeout } from "@/lib/fetch-timeout";
 import {
   NEARBY_LIMIT,
+  OUTER_RING_LIMIT,
+  OUTER_RING_START,
   buildQuery,
   fetchNearbySouls,
   groupByCemetery,
   heroUrl,
   lifespan,
   lifeYears,
+  placeKindOf,
   thumbUrl,
   year,
   type Soul,
@@ -37,6 +40,8 @@ function soul(partial: Partial<Soul>): Soul {
     label: "Test",
     desc: "",
     place: "Unknown resting place",
+    placeKind: "burial",
+    otherPlace: null,
     coord: null,
     dist: 0,
     article: null,
@@ -117,12 +122,20 @@ describe("lifeYears", () => {
   it("prefers years from the curated description over conflicting claims", () => {
     // e.g. Frances Drake: two normal-rank P569 claims (1908, 1912); the
     // description carries the community-accepted dates.
-    const s = soul({ desc: "American actress (1912–2000)", dob: "1908-01-01", dod: "2000-01-17" });
+    const s = soul({
+      desc: "American actress (1912–2000)",
+      dob: "1908-01-01",
+      dod: "2000-01-17",
+    });
     expect(lifeYears(s)).toEqual({ born: "1912", died: "2000" });
   });
 
   it("falls back to claim years when the description has none", () => {
-    const s = soul({ desc: "American actress", dob: "1908-01-01", dod: "2000-01-17" });
+    const s = soul({
+      desc: "American actress",
+      dob: "1908-01-01",
+      dod: "2000-01-17",
+    });
     expect(lifeYears(s)).toEqual({ born: "1908", died: "2000" });
   });
 
@@ -132,8 +145,67 @@ describe("lifeYears", () => {
   });
 
   it("ignores non-year parentheticals", () => {
-    const s = soul({ desc: "Singer (of the band Heart)", dob: "1950-06-19", dod: "" });
+    const s = soul({
+      desc: "Singer (of the band Heart)",
+      dob: "1950-06-19",
+      dod: "",
+    });
     expect(lifeYears(s)).toEqual({ born: "1950", died: "" });
+  });
+});
+
+describe("placeKindOf", () => {
+  it("maps died to death", () => {
+    expect(placeKindOf("died")).toBe("death");
+  });
+
+  it("maps buried to burial", () => {
+    expect(placeKindOf("buried")).toBe("burial");
+  });
+});
+
+describe("buildQuery mode", () => {
+  it("defaults to P119 in the subquery predicate and P20 in the outer OPTIONAL", () => {
+    const q = buildQuery(48.8566, 2.3522, 10);
+    expect(q).toContain("?person wdt:P119 ?p.");
+    expect(q).toContain("OPTIONAL { ?person wdt:P20 ?other. }");
+  });
+
+  it("swaps to P20 in the subquery predicate and P119 in the outer OPTIONAL for died mode", () => {
+    const q = buildQuery(48.8566, 2.3522, 10, "died");
+    expect(q).toContain("?person wdt:P20 ?p.");
+    expect(q).toContain("OPTIONAL { ?person wdt:P119 ?other. }");
+  });
+
+  it("adds the P1082 legit-place filter only in died mode", () => {
+    const died = buildQuery(48.8566, 2.3522, 10, "died");
+    expect(died).toContain("FILTER NOT EXISTS { ?p wdt:P1082 [] }");
+
+    const buried = buildQuery(48.8566, 2.3522, 10);
+    expect(buried).not.toContain("wdt:P1082");
+  });
+
+  it("applies the P1082 filter to both UNION passes in died mode, and neither in buried mode", () => {
+    const died = buildQuery(48.8566, 2.3522, 10, "died");
+    expect(died.match(/wdt:P1082/g)).toHaveLength(2);
+
+    const buried = buildQuery(48.8566, 2.3522, 10);
+    expect(buried.match(/wdt:P1082/g)).toBeNull();
+  });
+});
+
+describe("buildQuery outer ring", () => {
+  it("unions exactly two wikibase:around passes", () => {
+    const q = buildQuery(39.7392, -104.9903, 145, "buried");
+    expect(q.match(/SERVICE wikibase:around/g)).toHaveLength(2);
+    expect(q).toContain("UNION");
+  });
+
+  it("orders and limits the outer-ring pass, filtering to the outer 75% of the radius", () => {
+    const q = buildQuery(39.7392, -104.9903, 145, "buried");
+    expect(q).toContain("ORDER BY MD5(STR(?person))");
+    expect(q).toContain(`LIMIT ${OUTER_RING_LIMIT}`);
+    expect(q).toContain("FILTER(?d > 36.250 && ?d <= 145)");
   });
 });
 
@@ -153,9 +225,9 @@ describe("fetchNearbySouls", () => {
   it("reports capped: false when raw rows over-count distinct people (multi-image OPTIONAL join)", async () => {
     // 100 distinct QIDs, each appearing twice — e.g. two P18 images per person
     // via the OPTIONAL join. 200 raw rows but only 100 people: not capped.
-    const rows = Array.from({ length: 100 }, (_, i) => binding(`Q${i}`)).flatMap(
-      (b) => [b, b],
-    );
+    const rows = Array.from({ length: 100 }, (_, i) =>
+      binding(`Q${i}`),
+    ).flatMap((b) => [b, b]);
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse(rows));
 
     const { souls, capped } = await fetchNearbySouls(0, 0, 10);
@@ -168,7 +240,9 @@ describe("fetchNearbySouls", () => {
     // NEARBY_LIMIT distinct QIDs, one of them unlabeled junk (personLabel ===
     // qid) and dropped after the loop — the cap must still read true because
     // seen.size (counted before the junk filter) hits NEARBY_LIMIT.
-    const rows = Array.from({ length: NEARBY_LIMIT }, (_, i) => binding(`Q${i}`));
+    const rows = Array.from({ length: NEARBY_LIMIT }, (_, i) =>
+      binding(`Q${i}`),
+    );
     rows[0] = { ...rows[0], personLabel: { value: "Q0" } };
 
     vi.mocked(fetchWithTimeout).mockResolvedValue(mockResponse(rows));
@@ -176,6 +250,51 @@ describe("fetchNearbySouls", () => {
     const { souls, capped } = await fetchNearbySouls(0, 0, 10);
     expect(souls).toHaveLength(NEARBY_LIMIT - 1);
     expect(capped).toBe(true);
+  });
+
+  it("stamps placeKind burial by default (buried mode)", async () => {
+    vi.mocked(fetchWithTimeout).mockResolvedValue(
+      mockResponse([binding("Q1")]),
+    );
+
+    const { souls } = await fetchNearbySouls(0, 0, 10);
+    expect(souls[0].placeKind).toBe("burial");
+  });
+
+  it("stamps placeKind death for died mode", async () => {
+    vi.mocked(fetchWithTimeout).mockResolvedValue(
+      mockResponse([binding("Q1")]),
+    );
+
+    const { souls } = await fetchNearbySouls(0, 0, 10, "died");
+    expect(souls[0].placeKind).toBe("death");
+  });
+
+  it("reads otherLabel into otherPlace, null when absent", async () => {
+    vi.mocked(fetchWithTimeout).mockResolvedValue(
+      mockResponse([
+        { ...binding("Q1"), otherLabel: { value: "Some Cemetery" } },
+        binding("Q2"),
+      ]),
+    );
+
+    const { souls } = await fetchNearbySouls(0, 0, 10);
+    expect(souls.find((s) => s.qid === "Q1")?.otherPlace).toBe("Some Cemetery");
+    expect(souls.find((s) => s.qid === "Q2")?.otherPlace).toBeNull();
+  });
+
+  it("falls back to a mode-aware unknown-place label", async () => {
+    vi.mocked(fetchWithTimeout).mockResolvedValue(
+      mockResponse([binding("Q1")]),
+    );
+    const buried = await fetchNearbySouls(0, 0, 10);
+    expect(buried.souls[0].place).toBe("Unknown resting place");
+
+    vi.mocked(fetchWithTimeout).mockResolvedValue(
+      mockResponse([binding("Q1")]),
+    );
+    const died = await fetchNearbySouls(0, 0, 10, "died");
+    expect(died.souls[0].place).toBe("Unknown place of death");
   });
 });
 
@@ -192,5 +311,15 @@ describe("NEARBY_LIMIT", () => {
     const query = buildQuery(48.8566, 2.3522, 145);
     expect(query).toContain("GROUP BY ?person");
     expect(query).toContain("(MIN(?d) AS ?dist)");
+  });
+});
+
+describe("OUTER_RING_LIMIT / OUTER_RING_START", () => {
+  it("is 90", () => {
+    expect(OUTER_RING_LIMIT).toBe(90);
+  });
+
+  it("is 0.25", () => {
+    expect(OUTER_RING_START).toBe(0.25);
   });
 });

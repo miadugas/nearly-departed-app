@@ -15,12 +15,17 @@ import { searchPlaces, type Place } from "@/lib/geocode";
 export function PlaceSearch({
   onPick,
   onFocus,
+  selected,
+  onClear,
 }: {
   onPick: (place: Place) => void;
   onFocus?: () => void;
+  selected: Place | null;
+  onClear: () => void;
 }) {
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [pickedLabel, setPickedLabel] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(q.trim()), 280);
@@ -34,7 +39,22 @@ export function PlaceSearch({
     staleTime: 5 * 60 * 1000,
   });
 
-  const open = q.length >= 2;
+  const open = q.length >= 2 && q !== pickedLabel;
+
+  // Explore clears the place on tab re-select (recenter) — the field must
+  // follow. Adjusted during render (React's documented state-mirrors-a-prop
+  // escape hatch, using state rather than a ref — refs can't be touched
+  // during render) so the clear lands in the same commit as the prop change.
+  const [prevSelected, setPrevSelected] = useState(selected);
+  if (prevSelected !== selected) {
+    setPrevSelected(selected);
+    if (selected === null && pickedLabel !== null) {
+      setQ("");
+      setPickedLabel(null);
+    }
+  }
+
+  const isPickedText = selected !== null && q === pickedLabel;
 
   return (
     <View style={{ position: "relative", zIndex: 20 }}>
@@ -50,7 +70,9 @@ export function PlaceSearch({
           placeholderTextColor="rgba(255,255,255,0.50)"
           className="text-ink flex-1"
           style={{
-            fontFamily: "PlusJakartaSans_400Regular",
+            fontFamily: isPickedText
+              ? "PlusJakartaSans_600SemiBold"
+              : "PlusJakartaSans_400Regular",
             fontSize: 14,
             letterSpacing: 0,
           }}
@@ -65,8 +87,14 @@ export function PlaceSearch({
             onPress={() => {
               Keyboard.dismiss();
               setQ("");
+              setPickedLabel(null);
+              onClear();
             }}
             hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={
+              selected ? "Clear place, back to your location" : "Clear search"
+            }
           >
             <View
               style={{
@@ -103,7 +131,8 @@ export function PlaceSearch({
                 onPress={() => {
                   Keyboard.dismiss(); // picking navigates the map — typing is done
                   onPick(p);
-                  setQ("");
+                  setQ(p.label);
+                  setPickedLabel(p.label);
                 }}
                 className="flex-row items-center gap-3 border-b border-line px-4 py-3 active:bg-glass"
               >

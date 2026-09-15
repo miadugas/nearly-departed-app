@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { toFavorite } from "@/lib/favorites/types";
+import { placeKindOfFav, toFavorite } from "@/lib/favorites/types";
 import type { Soul } from "@/lib/wikidata";
 
 const soul: Soul = {
@@ -8,6 +8,8 @@ const soul: Soul = {
   label: "Ada Lovelace",
   desc: "mathematician",
   place: "Church of St Mary Magdalene",
+  placeKind: "burial",
+  otherPlace: null,
   coord: [52.0, -1.3],
   dist: 3.2,
   article: "https://en.wikipedia.org/wiki/Ada_Lovelace",
@@ -24,6 +26,8 @@ describe("toFavorite", () => {
       label: "Ada Lovelace",
       desc: "mathematician",
       place: "Church of St Mary Magdalene",
+      placeKind: "burial",
+      otherPlace: null,
       coord: [52.0, -1.3],
       image: "http://img/ada.jpg",
       dob: "1815-12-10",
@@ -43,5 +47,40 @@ describe("toFavorite", () => {
     const fav = toFavorite(soul, 1000);
 
     expect(fav.visitedAt ?? undefined).toBeUndefined();
+  });
+
+  it("carries placeKind and otherPlace from a died-mode soul", () => {
+    const died: Soul = {
+      ...soul,
+      placeKind: "death",
+      otherPlace: "Highgate Cemetery",
+    };
+    const fav = toFavorite(died, 1000);
+
+    expect(fav.placeKind).toBe("death");
+    expect(fav.otherPlace).toBe("Highgate Cemetery");
+  });
+});
+
+describe("placeKindOfFav", () => {
+  it("defaults to burial when the field is undefined", () => {
+    expect(placeKindOfFav(undefined)).toBe("burial");
+  });
+
+  it("defaults to burial when fav itself is null", () => {
+    expect(placeKindOfFav(null)).toBe("burial");
+  });
+
+  it("defaults to burial when placeKind is missing from the record", () => {
+    expect(placeKindOfFav({})).toBe("burial");
+  });
+
+  it("defaults to burial for a garbage string value", () => {
+    // @ts-expect-error - simulating a corrupted/legacy value crossing the jsonb boundary
+    expect(placeKindOfFav({ placeKind: "grave" })).toBe("burial");
+  });
+
+  it("returns death only for the exact string 'death'", () => {
+    expect(placeKindOfFav({ placeKind: "death" })).toBe("death");
   });
 });

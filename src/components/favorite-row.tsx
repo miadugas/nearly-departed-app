@@ -6,7 +6,11 @@ import { Pressable, Text, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 
 import { ACCENT } from "@/lib/colors";
-import { type FavoriteSoul, visitStampOf } from "@/lib/favorites/types";
+import {
+  type FavoriteSoul,
+  placeKindOfFav,
+  visitStampOf,
+} from "@/lib/favorites/types";
 import { lifeYears, thumbUrl } from "@/lib/wikidata";
 
 // The drawer revealed by swiping the row left. `rightActions` is an absolute-fill
@@ -47,6 +51,9 @@ export function FavoriteRow({
   const years = a || b ? `${a || "?"}–${b || "?"}` : "";
   // Saved is the default; only a proximity-verified visit stamps the row.
   const visited = visitStampOf(fav) !== undefined;
+  // A death-place favorite must never read like a grave.
+  const place =
+    placeKindOfFav(fav) === "death" ? `died · ${fav.place}` : fav.place;
 
   // WHY RNGH here but not in the Discover sheet: explore.tsx drives its sheet
   // drag with raw responder props precisely because the Pressables inside it
@@ -106,7 +113,7 @@ export function FavoriteRow({
             style={{ fontSize: 12, marginTop: 2 }}
             numberOfLines={1}
           >
-            {[years, fav.place].filter(Boolean).join(" · ") || fav.desc || "—"}
+            {[years, place].filter(Boolean).join(" · ") || fav.desc || "—"}
           </Text>
         </View>
 
