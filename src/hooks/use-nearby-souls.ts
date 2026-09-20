@@ -14,6 +14,11 @@ export function useNearbySouls(
     queryKey: ["nearby-souls", mode, lat, lon, radiusKm],
     queryFn: () => fetchNearbySouls(lat, lon, radiusKm, mode),
     staleTime: 1000 * 60 * 30, // 30 min — the dead don't move
+    // WDQS degradation is per-endpoint, not per-request: when it's slow every
+    // retry eats the full 20 s timeout against the same slow service. One
+    // retry covers a transient blip; more just hides the failure behind a
+    // minute-plus spinner before the error copy can appear.
+    retry: 1,
     // Hold the last list while a new radius/place loads: no empty flicker
     // between queries, and `isLoading` then means "nothing has ever loaded".
     placeholderData: keepPreviousData,

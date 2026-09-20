@@ -512,7 +512,7 @@ export default function Discover() {
                   ) : isLoading ? (
                     "Consulting the records…"
                   ) : isError ? (
-                    "Query failed — pick a radius to retry."
+                    "Wikidata is slow right now — pick a radius to retry."
                   ) : showRefreshing ? (
                     // stale results are still on screen for a new key — say so
                     // rather than letting the old count read as the answer
@@ -584,8 +584,8 @@ export default function Discover() {
                 className="font-sans text-ink-dim text-center"
                 style={{ fontSize: 14 }}
               >
-                Couldn&apos;t reach Wikidata. Check your connection and try
-                another radius.
+                Wikidata is slow right now. Pick a radius to retry, or try
+                again in a few minutes.
               </Text>
             </View>
           ) : (
