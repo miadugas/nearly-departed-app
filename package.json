@@ -47,10 +47,12 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~56.0.4",
+    "patch-package": "^8.0.1",
     "typescript": "~6.0.3",
     "vitest": "^4.1.9"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "sync:legal": "node scripts/sync-legal.mjs",
     "sync:legal:watch": "node scripts/sync-legal.mjs --watch",
     "prestart": "node scripts/sync-legal.mjs",

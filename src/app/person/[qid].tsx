@@ -141,8 +141,11 @@ export default function PersonDetail() {
   const bio =
     summary.data?.extract ||
     (summary.isLoading ? "Reading the record…" : soul.desc);
-  // Favorites don't store distance (it's location-dependent), so guard it.
-  const hasDist = Number.isFinite(soul.dist);
+  // Distance shown on this page is always from the *device*. `soul.dist` is
+  // relative to whatever origin Explore was using — a searched place gives
+  // "4 mi from you" while the visit CTA (device-based) says 17 mi. Favorites
+  // don't carry `dist` at all, so this also fixes their blank stat.
+  const hasDist = kmFromDevice !== null;
 
   const openDirections = () => {
     if (!soul.coord) return;
@@ -303,7 +306,7 @@ export default function PersonDetail() {
                 }}
               >
                 {hasDist
-                  ? `${formatDistance(soul.dist, unit)} from you`
+                  ? `${formatDistance(kmFromDevice, unit)} from you`
                   : soul.place}
               </Text>
             </View>
@@ -348,7 +351,7 @@ export default function PersonDetail() {
               />
               <Stat
                 label="Distance"
-                value={hasDist ? formatDistance(soul.dist, unit) : "—"}
+                value={hasDist ? formatDistance(kmFromDevice, unit) : "—"}
                 noRight
               />
             </View>
