@@ -1,7 +1,7 @@
 {
   "name": "nearly-departed-app",
   "main": "expo-router/entry",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "dependencies": {
     "@expo-google-fonts/cormorant-garamond": "^0.4.1",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",

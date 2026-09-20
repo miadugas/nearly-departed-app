@@ -80,6 +80,12 @@ keywords are a metadata-rejection trigger.
 • Account deletion — Profile → Delete account removes everything
 ```
 
+## What's New (1.0.7)
+
+```
+Distances now mean what they say. Every person page measures from you — not from the place you searched — so "4 mi from you" and the visit button finally agree. When Wikidata is having a slow day, the app now tells you instead of spinning forever.
+```
+
 ## What's New (1.0.6)
 
 ```
