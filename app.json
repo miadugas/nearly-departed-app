@@ -60,7 +60,8 @@
           "motionUsagePermission": "Motion activity helps the system improve location accuracy while you explore."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "./plugins/with-min-deployment-target.js"
     ],
     "experiments": {
       "typedRoutes": true,
