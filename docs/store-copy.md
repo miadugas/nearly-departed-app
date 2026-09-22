@@ -18,7 +18,7 @@ The notable dead, nearby
 ## Promotional text (170 char max — editable without review)
 
 ```
-The most interesting people nearby are already dead. Find the writers, outlaws, and legends buried around you — and the stories of how they lived.
+The most interesting people nearby are already dead. See who's buried around you — or flip to Died here and find the hotel, hospital, or street where a legend went out.
 ```
 
 ## Description
